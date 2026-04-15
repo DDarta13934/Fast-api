@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система управления студентами</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-10">
+
+    <nav class="bg-white shadow-sm border-b mb-8">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-graduation-cap text-blue-600 text-2xl"></i>
+                <span class="font-bold text-xl text-slate-800">DocGen <span class="text-blue-600 text-sm font-normal">v2.0</span></span>
+            </div>
+            <div id="status" class="text-xs text-slate-400">Система готова</div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4">
+        
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6 border border-slate-200">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">Выберите студента для редактирования</label>
+            <div class="relative">
+                <select id="studentSelect" onchange="loadStudentDetails()" 
+                    class="block w-full pl-3 pr-10 py-3 text-base border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg border transition-all appearance-none cursor-pointer bg-white">
+                    <option value="">Загрузка списка...</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+            </div>
+        </div>
+
+        <div id="editForm" class="hidden fade-in bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4">
+                <h2 class="text-lg font-semibold text-slate-800 flex items-center">
+                    <i class="fa-solid fa-user-pen mr-2 text-blue-500"></i> Данные студента
+                </h2>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">ФИО обучающегося</label>
+                    <input type="text" id="inputFio" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Наименование модуля</label>
+                        <input type="text" id="inputModule" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Название организации</label>
+                        <input type="text" id="inputOrg" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
+                    </div>
+                </div>
+
+                <div class="pt-6 flex flex-col sm:flex-row gap-3">
+                    <button onclick="saveChanges()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i> Сохранить в БД
+                    </button>
+                    <button onclick="generateDocs()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-file-pdf mr-2"></i> Сгенерировать ZIP
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const select = document.getElementById("studentSelect");
+        const form = document.getElementById("editForm");
+        const status = document.getElementById("status");
+
+        async function loadStudents() {
+            try {
+                const response = await fetch("/students/");
+                const data = await response.json();
+                select.innerHTML = '<option value="">-- Выберите из списка --</option>';
+                data.forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s.id;
+                    opt.textContent = s.fio;
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                status.textContent = "Ошибка подключения";
+            }
+        }
+
+        async function loadStudentDetails() {
+            const id = select.value;
+            if (!id) { form.classList.add("hidden"); return; }
+
+            status.textContent = "Загрузка данных...";
+            const response = await fetch(`/students/${id}`);
+            const data = await response.json();
+
+            document.getElementById("inputFio").value = data.fio || "";
+            document.getElementById("inputModule").value = data.module_name || "";
+            document.getElementById("inputOrg").value = data.org_name || "";
+            
+            form.classList.remove("hidden");
+            status.textContent = "Данные загружены";
+        }
+
+        async function saveChanges() {
+            const id = select.value;
+            const payload = {
+                fio: document.getElementById("inputFio").value,
+                module_name: document.getElementById("inputModule").value,
+                org_name: document.getElementById("inputOrg").value
+            };
+
+            status.textContent = "Сохранение...";
+            const response = await fetch(`/students/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                status.textContent = "Изменения сохранены!";
+                select.options[select.selectedIndex].textContent = payload.fio;
+                setTimeout(() => status.textContent = "Готов", 2000);
+            }
+        }
+
+        function generateDocs() {
+            if (!select.value) return;
+            status.textContent = "Генерация архива...";
+            window.location.href = "/students/" + select.value + "/generate-all";
+        }
+
+        loadStudents();
+    </script>
+</body>
+</html>

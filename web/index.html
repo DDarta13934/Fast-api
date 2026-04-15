@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Практика</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<h2>Данные практики</h2>
+
+<input id="practiceId" placeholder="ID записи" value="1">
+<button onclick="loadData()">📥 Загрузить</button>
+
+<hr>
+
+<div id="form" style="display:none">
+
+  <input id="fio" placeholder="ФИО обучающегося"><br><br>
+  <input id="teacher" placeholder="ФИО преподавателя"><br><br>
+  <input id="start_day" placeholder="День начала ПП"><br><br>
+  <input id="start_month" placeholder="Месяц начала ПП"><br><br>
+  <input id="start_year" placeholder="Год начала ПП"><br><br>
+
+  <button onclick="saveData()">💾 Сохранить</button>
+  <button onclick="generateDoc()">📄 Сгенерировать документ</button>
+</div>
+
+<script>
+let currentId = null;
+
+// 🔹 ЗАГРУЗКА данных из PostgreSQL
+function loadData() {
+  currentId = document.getElementById("practiceId").value;
+
+  fetch(`/practice/${currentId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        alert("Запись не найдена");
+        return;
+      }
+
+      document.getElementById("fio").value = data["ФИО_обучающегося"] || "";
+      document.getElementById("teacher").value = data["ФИО_преподавателя"] || "";
+      document.getElementById("start_day").value = data["день_начала_ПП"] || "";
+      document.getElementById("start_month").value = data["месяц_начала_ПП"] || "";
+      document.getElementById("start_year").value = data["год_начала_ПП"] || "";
+
+      document.getElementById("form").style.display = "block";
+    });
+}
+
+// 🔹 СОХРАНЕНИЕ данных (ВОТ ТУТ fetch PUT)
+function saveData() {
+  fetch(`/practice/${currentId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      "ФИО_обучающегося": document.getElementById("fio").value,
+      "ФИО_преподавателя": document.getElementById("teacher").value,
+      "день_начала_ПП": document.getElementById("start_day").value,
+      "месяц_начала_ПП": document.getElementById("start_month").value,
+      "год_начала_ПП": document.getElementById("start_year").value
+    })
+  })
+  .then(() => alert("✅ Сохранено"));
+}
+
+// 🔹 ГЕНЕРАЦИЯ документа
+function generateDoc() {
+  window.location = `/generate/${currentId}/Аттестационный лист производственная`;
+}
+</script>
+
+</body>
+</html>
