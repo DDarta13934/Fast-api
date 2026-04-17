@@ -4,7 +4,7 @@ from app.routers.students import router as students_router
 from app.routers.ui import router as ui_router
 
 # --- НОВЫЕ ИМПОРТЫ ДЛЯ БАЗЫ ДАННЫХ ---
-from db import get_conn
+from app.db import get_conn
 from psycopg2.extras import RealDictCursor
 
 app = FastAPI()
