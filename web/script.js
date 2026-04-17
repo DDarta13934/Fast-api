@@ -6,7 +6,17 @@ const API = ""; // пусто = тот же домен
 let currentId = null;
 
 function show(text) {
-  document.getElementById("result").innerText = text;
+    const resDiv = document.getElementById("result");
+    resDiv.innerText = text;
+    
+    // Меняем цвет в зависимости от результата
+    if (text.includes("✅")) {
+        resDiv.className = "alert alert-success py-2 text-center small mb-3";
+    } else if (text.includes("❌")) {
+        resDiv.className = "alert alert-danger py-2 text-center small mb-3";
+    } else {
+        resDiv.className = "alert alert-info py-2 text-center small mb-3";
+    }
 }
 
 // 📥 ЗАГРУЗКА
