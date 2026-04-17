@@ -18,9 +18,16 @@
   <h2>Данные практики</h2>
 
   <label for="studentSelect">Выберите студента из базы:</label><br>
-  <select id="studentSelect">
-    <option value="">-- Выберите студента --</option>
-  </select>
+ <label for="studentSelect">Выберите студента из базы:</label><br>
+  
+<select id="studentSelect">
+  <option value="">-- Выберите студента --</option>
+  {% for student in students %}
+    <option value="{{ student.id }}">
+      {{ student.ФИО_обучающегося or student['ФИО_обучающегося'] or "Студент #" ~ student.id }}
+    </option>
+  {% endfor %}
+</select>
   
   <p>Или введите ID вручную:</p>
   <input id="practiceId" placeholder="ID записи" value="1">
