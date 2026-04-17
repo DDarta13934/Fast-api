@@ -2,143 +2,89 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Практика</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Управление практикой</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-    input, select { width: 100%; max-width: 400px; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
-    button { padding: 10px 15px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; margin-right: 5px; }
-    button:hover { background-color: #0056b3; }
-    .container { max-width: 500px; margin: auto; }
+    body { background-color: #f8f9fa; color: #333; }
+    .main-card { border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none; }
+    .btn-custom { border-radius: 8px; transition: all 0.2s; }
+    .btn-custom:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+    .form-label { font-weight: 600; font-size: 0.9rem; color: #555; }
+    #result { font-weight: 500; }
   </style>
 </head>
-<body>
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      
+      <div class="card main-card mb-4">
+        <div class="card-body p-4">
+          <h2 class="text-center mb-4">🎓 Данные практики</h2>
+          
+          <div id="result" class="alert alert-info py-2 text-center small mb-3">Готов к работе</div>
 
-<div class="container">
-  <h2>Данные практики</h2>
+          <div class="mb-3">
+            <label class="form-label">Выберите студента из базы:</label>
+            <select id="studentSelect" class="form-select form-select-lg">
+              <option value="">-- Нажмите для выбора --</option>
+              {% for student in students %}
+                <option value="{{ student.id }}">
+                  {{ student.ФИО_обучающегося or student['ФИО_обучающегося'] or "Студент #" ~ student.id }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
 
- <label for="studentSelect">Выберите студента из базы:</label><br>
-  
-<select id="studentSelect">
-  <option value="">-- Выберите студента --</option>
-  {% for student in students %}
-    <option value="{{ student.id }}">
-      {{ student.ФИО_обучающегося or student['ФИО_обучающегося'] or "Студент #" ~ student.id }}
-    </option>
-  {% endfor %}
-</select>
-  
-  <p>Или введите ID вручную:</p>
-  <input id="practiceId" placeholder="ID записи" value="1">
-  <button onclick="loadData()">📥 Загрузить</button>
+          <div class="input-group mb-4">
+            <input type="number" id="practiceId" class="form-control" placeholder="ID записи" value="1">
+            <button class="btn btn-primary btn-custom" onclick="loadData()">📥 Загрузить</button>
+          </div>
 
-  <hr>
+          <hr class="my-4">
 
-  <div id="form" style="display:none">
-    <label>ФИО обучающегося:</label><br>
-    <input id="fio" placeholder="ФИО обучающегося"><br>
-    
-    <label>ФИО преподавателя:</label><br>
-    <input id="teacher" placeholder="ФИО преподавателя"><br>
-    
-    <label>Дата начала ПП:</label><br>
-    <div style="display: flex; gap: 5px; max-width: 400px;">
-        <input id="start_day" placeholder="День">
-        <input id="start_month" placeholder="Месяц">
-        <input id="start_year" placeholder="Год">
+          <div id="form" style="display:none" class="animate__animated animate__fadeIn">
+            <div class="mb-3">
+              <label class="form-label">ФИО обучающегося</label>
+              <input id="fio" class="form-control" placeholder="Введите ФИО">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">ФИО преподавателя</label>
+              <input id="teacher" class="form-control" placeholder="ФИО преподавателя">
+            </div>
+
+            <label class="form-label">Дата начала практики</label>
+            <div class="row g-2 mb-3">
+              <div class="col-3"><input id="start_day" class="form-control" placeholder="ДД"></div>
+              <div class="col-5"><input id="start_month" class="form-control" placeholder="Месяц"></div>
+              <div class="col-4"><input id="start_year" class="form-control" placeholder="ГГГГ"></div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">Название организации</label>
+              <textarea id="org_name" class="form-control" rows="2" placeholder="Организация..."></textarea>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button class="btn btn-success btn-lg btn-custom" onclick="saveData()">💾 Сохранить изменения</button>
+              <div class="row g-2">
+                <div class="col-6">
+                  <button class="btn btn-outline-primary w-100 btn-custom" onclick="generateDoc()">📄 Документ</button>
+                </div>
+                <div class="col-6">
+                  <button class="btn btn-outline-secondary w-100 btn-custom" onclick="generateAll()">📦 Весь архив</button>
+                </div>
+              </div>
+              <button class="btn btn-info text-white mt-2 btn-custom" onclick="sendToTelegram()">📨 Отправить в Telegram</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      
     </div>
-
-    <label>Название организации:</label><br>
-    <input id="org_name" placeholder="Организация"><br><br>
-
-    <button onclick="saveData()">💾 Сохранить</button>
-    <button onclick="generateDoc()" style="background-color: #28a745;">📄 Сгенерировать документ</button>
   </div>
 </div>
-
-<script>
-let currentId = null;
-
-// 1. Автоматическая загрузка списка студентов при открытии страницы
-window.onload = function() {
-    fetch('/') // Мы обращаемся к главной, так как именно она теперь возвращает список
-        .then(r => r.json())
-        .then(students => {
-            const select = document.getElementById("studentSelect");
-            students.forEach(s => {
-                let opt = document.createElement("option");
-                opt.value = s.id;
-                
-                // Пробуем разные варианты ключа, чтобы точно найти ФИО
-                let name = s.ФИО_обучающегося || s['ФИО_обучающегося'] || s.fio || ("Студент №" + s.id);
-                
-                opt.textContent = name;
-                select.appendChild(opt);
-            });
-        })
-        .catch(err => console.error("Ошибка загрузки списка:", err));
-};
-
-// 2. Слушатель события: когда выбрали студента в списке
-document.getElementById('studentSelect').addEventListener('change', function() {
-    if (this.value) {
-        document.getElementById("practiceId").value = this.value;
-        loadData();
-    }
-});
-
-// 3. ЗАГРУЗКА данных конкретного студента
-function loadData() {
-  currentId = document.getElementById("practiceId").value;
-  if (!currentId) return;
-
-  // Используем новый эндпоинт /get_student/ который мы добавили в main.py
-  fetch(`/get_student/${currentId}`)
-    .then(r => r.json())
-    .then(data => {
-      if (data.detail || data.error) {
-        alert("Запись не найдена");
-        return;
-      }
-
-      // Заполняем поля (ключи соответствуют колонкам в Neon)
-      document.getElementById("fio").value = data["ФИО_обучающегося"] || "";
-      document.getElementById("teacher").value = data["ФИО_преподавателя"] || "";
-      document.getElementById("start_day").value = data["день_начала_ПП"] || "";
-      document.getElementById("start_month").value = data["месяц_начала_ПП"] || "";
-      document.getElementById("start_year").value = data["год_начала_ПП"] || "";
-      document.getElementById("org_name").value = data["название_организации"] || "";
-
-      document.getElementById("form").style.display = "block";
-    })
-    .catch(err => alert("Ошибка при загрузке: " + err));
-}
-
-// 4. СОХРАНЕНИЕ изменений
-function saveData() {
-  fetch(`/practice/${currentId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      "ФИО_обучающегося": document.getElementById("fio").value,
-      "ФИО_преподавателя": document.getElementById("teacher").value,
-      "день_начала_ПП": document.getElementById("start_day").value,
-      "месяц_начала_ПП": document.getElementById("start_month").value,
-      "год_начала_ПП": document.getElementById("start_year").value,
-      "название_организации": document.getElementById("org_name").value
-    })
-  })
-  .then(r => {
-      if(r.ok) alert("✅ Данные в базе обновлены!");
-      else alert("❌ Ошибка при сохранении");
-  });
-}
-
-// 5. ГЕНЕРАЦИЯ документа
-function generateDoc() {
-  window.location = `/generate/${currentId}/Аттестационный лист производственная`;
-}
-</script>
-
-</body>
 </html>
