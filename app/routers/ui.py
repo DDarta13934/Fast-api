@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 
 router = APIRouter()
 # Исправленный путь к папке (app/templates)
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="web")
 
 @router.get("/")
 async def read_root(request: Request):
