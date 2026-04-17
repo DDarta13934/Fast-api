@@ -55,17 +55,22 @@ let currentId = null;
 
 // 1. Автоматическая загрузка списка студентов при открытии страницы
 window.onload = function() {
-    fetch('/students/') // Твой эндпоинт, который отдает список всех студентов
+    fetch('/') // Мы обращаемся к главной, так как именно она теперь возвращает список
         .then(r => r.json())
         .then(students => {
             const select = document.getElementById("studentSelect");
             students.forEach(s => {
                 let opt = document.createElement("option");
                 opt.value = s.id;
-                opt.textContent = s.ФИО_обучающегося;
+                
+                // Пробуем разные варианты ключа, чтобы точно найти ФИО
+                let name = s.ФИО_обучающегося || s['ФИО_обучающегося'] || s.fio || ("Студент №" + s.id);
+                
+                opt.textContent = name;
                 select.appendChild(opt);
             });
-        });
+        })
+        .catch(err => console.error("Ошибка загрузки списка:", err));
 };
 
 // 2. Слушатель события: когда выбрали студента в списке
