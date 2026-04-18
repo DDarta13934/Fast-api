@@ -31,25 +31,24 @@ def get_student_detail(student_id: int):
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute('''
-                    SELECT id, "ФИО_обучающегося", "наименование_модуля", "название_организации"
+                    SELECT id, "ФИО_обучающегося", "наименование_модуля", 
+                           "название_организации", "ФИО_отв_организации", "дата_начала"
                     FROM students WHERE id = %s
                 ''', (student_id,))
                 r = cur.fetchone()
                 if not r:
                     raise HTTPException(status_code=404, detail="Студент не найден")
                 
-                # Возвращаем только те поля, которые ТОЧНО есть в базе
+                # Возвращаем расширенный словарь
                 return {
                     "id": r[0], 
                     "fio": r[1], 
                     "module_name": r[2], 
                     "org_name": r[3],
-                    "teacher": "", # Заглушка, чтобы Flutter не ругался
-                    "start_date": "" # Заглушка
+                    "teacher": r[4],    # ФИО преподавателя/отв. лица
+                    "start_date": r[5]  # Дата
                 }
     except Exception as e:
-        # Это выведет ошибку в логи Render
-        print(f"ERROR: {e}") 
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- 3. ОБНОВЛЕННОЕ СОХРАНЕНИЕ (пункт 3) ---
