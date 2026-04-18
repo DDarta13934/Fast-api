@@ -27,22 +27,21 @@ async function loadData() {
   show("⏳ Загружаем данные...");
 
   try {
-    const res = await fetch(`${API}/practice/${currentId}`);
+    // Добавили /students/ в путь
+    const res = await fetch(`/students/${currentId}`); 
     const data = await res.json();
 
-    if (data.error) throw new Error();
+    if (res.status === 404) throw new Error("not_found");
 
-    // Загружаем ВСЕ поля, чтобы они отобразились в интерфейсе
-    document.getElementById("fio").value = data["ФИО_обучающегося"] || "";
-    document.getElementById("teacher").value = data["ФИО_преподавателя"] || "";
-    document.getElementById("start_day").value = data["день_начала_ПП"] || "";
-    document.getElementById("start_month").value = data["месяц_начала_ПП"] || "";
-    document.getElementById("start_year").value = data["год_начала_ПП"] || "";
-    document.getElementById("org_name").value = data["название_организации"] || "";
-
+    // Заполняем поля (используем имена ключей из твоего students.py)
+    document.getElementById("fio").value = data.fio || "";
+    document.getElementById("org_name").value = data.org_name || "";
+    // Примечание: в твоем Python коде сейчас нет передачи teacher и дат, 
+    // они пока останутся пустыми, пока не допишешь их в students.py
+    
     document.getElementById("form").style.display = "block";
     show("✅ Данные загружены");
-  } catch {
+  } catch (err) {
     show("❌ Запись не найдена");
   }
 }
@@ -53,25 +52,18 @@ async function saveData() {
   show("💾 Сохраняем...");
 
   try {
-    const res = await fetch(`${API}/practice/${currentId}`, {
+    const res = await fetch(`/students/${currentId}`, {
       method: "PUT",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        "ФИО_обучающегося": document.getElementById("fio").value,
-        "ФИО_преподавателя": document.getElementById("teacher").value,
-        "день_начала_ПП": document.getElementById("start_day").value,
-        "месяц_начала_ПП": document.getElementById("start_month").value,
-        "год_начала_ПП": document.getElementById("start_year").value,
-        // Вот оно — наше новое поле организации!
-        "название_организации": document.getElementById("org_name").value 
+        "fio": document.getElementById("fio").value,
+        "module_name": "ПМ.01", // В Python коде это поле обязательное
+        "org_name": document.getElementById("org_name").value
       })
     });
 
-    if (res.ok) {
-        show("✅ Сохранено");
-    } else {
-        show("❌ Ошибка сохранения");
-    }
+    if (res.ok) show("✅ Сохранено");
+    else show("❌ Ошибка сохранения");
   } catch {
     show("❌ Ошибка сети");
   }
@@ -79,18 +71,15 @@ async function saveData() {
 
 // 📄 ГЕНЕРАЦИЯ ОДНОГО ДОКУМЕНТА
 function generateDoc() {
-  if (!currentId) {
-      show("❌ Сначала выберите студента!");
-      return;
-  }
-  show("📄 Генерируем документ...");
-  window.location = `${API}/generate/${currentId}/Аттестационный лист производственная`;
+  if (!currentId) return show("❌ Выберите студента");
+  // Путь должен быть /students/{id}/generate-all
+  window.location = `/students/${currentId}/generate-all`;
 }
 
 // 📦 ВСЕ ДОКУМЕНТЫ
 function generateAll() {
-  show("📦 Генерируем документы...");
-  window.location = `${API}/generate_all/${currentId}`;
+  if (!currentId) return show("❌ Выберите студента");
+  window.location = `/students/${currentId}/generate-all`;
 }
 
 // 📨 ОТПРАВКА В TELEGRAM
