@@ -48,25 +48,24 @@ async function loadData() {
 
 // 💾 СОХРАНЕНИЕ
 async function saveData() {
-  if (!currentId) return;
-  show("💾 Сохраняем...");
+    if (!currentId) return;
+    
+    const updateData = {
+        fio: document.getElementById("fio").value,
+        org_name: document.getElementById("org_name").value,
+        module_name: "ПМ.01" // Обязательное поле для вашей модели в Python
+    };
 
-  try {
-    const res = await fetch(`/students/${currentId}`, {
-      method: "PUT",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        "fio": document.getElementById("fio").value,
-        "module_name": "ПМ.01", // В Python коде это поле обязательное
-        "org_name": document.getElementById("org_name").value
-      })
-    });
-
-    if (res.ok) show("✅ Сохранено");
-    else show("❌ Ошибка сохранения");
-  } catch {
-    show("❌ Ошибка сети");
-  }
+    try {
+        const res = await fetch(`/students/${currentId}`, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(updateData)
+        });
+        if (res.ok) show("✅ Сохранено");
+    } catch (e) {
+        show("❌ Ошибка соединения");
+    }
 }
 
 // 📄 ГЕНЕРАЦИЯ ОДНОГО ДОКУМЕНТА
