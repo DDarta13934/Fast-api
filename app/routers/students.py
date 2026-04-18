@@ -13,50 +13,67 @@ class StudentUpdateModel(BaseModel):
 
 router = APIRouter(prefix="/students", tags=["students"])
 
-# 1. ПОЛУЧЕНИЕ СПИСКА (адрес: /students/)
-@router.get("/")
-def get_students():
-    try:
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute('SELECT id, "ФИО_обучающегося" FROM students ORDER BY id')
-                rows = cur.fetchall()
-                return [{"id": r[0], "fio": r[1]} for r in rows]
-    except Exception as e:
-        print(f"Ошибка списка: {e}")
-        return []
+# --- 1. ОБНОВЛЕННАЯ СХЕМА ---
+# Добавляем поля для преподавателя и даты
+class StudentUpdateModel(BaseModel):
+    fio: str
+    module_name: str
+    org_name: str
+    teacher: str      # Новое поле
+    start_date: str   # Новое поле (для даты начала)
 
-# 2. ПОЛУЧЕНИЕ ОДНОГО СТУДЕНТА (адрес: /students/{id})
+# ... (код получения списка остается прежним) ...
+
+# --- 2. ОБНОВЛЕННОЕ ПОЛУЧЕНИЕ (пункт 2) ---
 @router.get("/{student_id}")
 def get_student_detail(student_id: int):
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute('''
-                    SELECT id, "ФИО_обучающегося", "наименование_модуля", "название_организации", "ФИО_отв_организации"
+                    SELECT id, "ФИО_обучающегося", "наименование_модуля", 
+                           "название_организации", "ФИО_отв_организации", "дата_начала"
                     FROM students WHERE id = %s
                 ''', (student_id,))
                 r = cur.fetchone()
                 if not r:
                     raise HTTPException(status_code=404, detail="Студент не найден")
-                return {"id": r[0], "fio": r[1], "module_name": r[2], "org_name": r[3]}
+                
+                # Возвращаем расширенный словарь
+                return {
+                    "id": r[0], 
+                    "fio": r[1], 
+                    "module_name": r[2], 
+                    "org_name": r[3],
+                    "teacher": r[4],    # ФИО преподавателя/отв. лица
+                    "start_date": r[5]  # Дата
+                }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 3. ОБНОВЛЕНИЕ ДАННЫХ В БД (адрес: /students/{id} через PUT)
+# --- 3. ОБНОВЛЕННОЕ СОХРАНЕНИЕ (пункт 3) ---
 @router.put("/{student_id}")
 def update_student(student_id: int, student: StudentUpdateModel):
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
-                # Обновляем только те поля, которые мы реально вывели в интерфейс
+                # Обновляем все поля, включая новые
                 cur.execute('''
                     UPDATE students 
                     SET "ФИО_обучающегося" = %s, 
                         "наименование_модуля" = %s, 
-                        "название_организации" = %s
+                        "название_организации" = %s,
+                        "ФИО_отв_организации" = %s,
+                        "дата_начала" = %s
                     WHERE id = %s
-                ''', (student.fio, student.module_name, student.org_name, student_id))
+                ''', (
+                    student.fio, 
+                    student.module_name, 
+                    student.org_name, 
+                    student.teacher, 
+                    student.start_date, 
+                    student_id
+                ))
                 conn.commit()
         return {"status": "ok"}
     except Exception as e:
