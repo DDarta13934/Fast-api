@@ -251,7 +251,13 @@ function saveData() {
 }
 // 5. ГЕНЕРАЦИЯ документа
 function generateDoc() {
-  window.location = `/generate/${currentId}/Аттестационный лист производственная`;
+    if (!currentId) return show("❌ Сначала выберите студента");
+    
+    // Получаем название документа (например, из заголовка или константой)
+    const docName = "Аттестационный лист производственная";
+    
+    // ВАЖНО: Добавляем /students в начало пути, так как в Python прописан prefix="/students"
+    window.location.href = `/students/generate/${currentId}/${encodeURIComponent(docName)}`;
 }
 </script>
 </body>
