@@ -63,9 +63,9 @@ def update_student(student_id: int, student: StudentUpdateModel):
         print(f"Ошибка сохранения в БД: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# 4. ГЕНЕРАЦИЯ (адрес: /students/{id}/generate-all)
-@router.get("/{student_id}/generate-all")
-def generate_all(student_id: int):
+# 4. ГЕНЕРАЦИЯ (теперь адрес совпадает с тем, что ищет браузер)
+@router.get("/generate/{student_id}/{doc_name}")
+def generate_all(student_id: int, doc_name: str):
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
