@@ -49,23 +49,22 @@ async function loadData() {
 // 💾 СОХРАНЕНИЕ
 async function saveData() {
     if (!currentId) return;
-    
+
+    // Собираем дату из трех инпутов в одну строку (или как тебе удобнее хранить)
+    const day = document.getElementById("start_day").value;
+    const month = document.getElementById("start_month").value;
+    const year = document.getElementById("start_year").value;
+    const fullDate = `${day} ${month} ${year}`;
+
     const updateData = {
         fio: document.getElementById("fio").value,
         org_name: document.getElementById("org_name").value,
-        module_name: "ПМ.01" // Обязательное поле для вашей модели в Python
+        module_name: "ПМ.01",
+        teacher: document.getElementById("teacher").value, // Новое
+        start_date: fullDate                               // Новое
     };
 
-    try {
-        const res = await fetch(`/students/${currentId}`, {
-            method: "PUT",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(updateData)
-        });
-        if (res.ok) show("✅ Сохранено");
-    } catch (e) {
-        show("❌ Ошибка соединения");
-    }
+    // ... далее fetch как обычно ...
 }
 
 // 📄 ГЕНЕРАЦИЯ ОДНОГО ДОКУМЕНТА
