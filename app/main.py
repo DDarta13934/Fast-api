@@ -12,7 +12,8 @@ from app.db import get_conn
 
 from psycopg2.extras import RealDictCursor
 
-app = FastAPI()
+# Было: app = FastAPI()
+app = FastAPI(redirect_slashes=False)
 
 # Подключаем роутеры БЕЗ префикса здесь, так как они уже есть внутри файлов
 
