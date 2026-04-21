@@ -14,7 +14,6 @@ class StudentUpdateModel(BaseModel):
     teacher: str      
     start_date: str   
 
-# ПОЛУЧЕНИЕ СПИСКА (Исправляет 404 при входе)
 @router.get("/")
 def get_all_students():
     with get_conn() as conn:
@@ -23,7 +22,6 @@ def get_all_students():
             rows = cur.fetchall()
             return [{"id": r[0], "fio": r[1]} for r in rows]
 
-# ДЕТАЛИ СТУДЕНТА (Исправляет 404 при нажатии на карточку)
 @router.get("/{student_id}")
 def get_student_detail(student_id: int):
     with get_conn() as conn:
@@ -40,7 +38,6 @@ def get_student_detail(student_id: int):
                 "org_name": r[3], "teacher": r[4], "start_date": r[5]
             }
 
-# СОХРАНЕНИЕ
 @router.put("/{student_id}")
 def update_student(student_id: int, student: StudentUpdateModel):
     with get_conn() as conn:
@@ -55,7 +52,6 @@ def update_student(student_id: int, student: StudentUpdateModel):
             conn.commit()
     return {"status": "ok"}
 
-# ГЕНЕРАЦИЯ (Путь подстроен под Flutter)
 @router.get("/{student_id}/generate-all")
 def generate_all(student_id: int):
     with get_conn() as conn:
