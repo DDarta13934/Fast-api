@@ -142,3 +142,9 @@ def generate_all_fixed(student_id: int):
     data_tuple = build_template_data(student_dict)
     zip_path = generate_all_docs(data_tuple)
     return FileResponse(zip_path, filename=f"docs_{student_id}.zip")
+
+# Этот маршрут специально для твоей кнопки, которая шлет /students/generate/23/...
+@router.get("/generate/{student_id}/{suffix:path}")
+async def catch_old_button_request(student_id: int, suffix: str):
+    # Мы просто игнорируем "Аттестационный лист..." и вызываем рабочую функцию
+    return generate_all(student_id)
