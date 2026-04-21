@@ -3,16 +3,17 @@ from app.db import get_conn
 from fastapi.responses import FileResponse
 from app.services.document_service import generate_all_docs, build_template_data
 from pydantic import BaseModel
+from typing import Optional
 import os
 
 router = APIRouter(prefix="/students", tags=["students"])
 
 class StudentUpdateModel(BaseModel):
-    fio: str
-    module_name: str
-    org_name: str
-    teacher: str      
-    start_date: str   
+    fio: Optional[str] = None
+    module_name: Optional[str] = "ПМ.01"
+    org_name: Optional[str] = None
+    teacher: Optional[str] = None
+    start_date: Optional[str] = None
 
 @router.get("/")
 def get_all_students():
