@@ -127,3 +127,18 @@ def generate_all(student_id: int):
     zip_path = generate_all_docs(data_tuple)
 
     return FileResponse(zip_path, filename=f"docs_{student_id}.zip")
+
+@router.get("/{student_id}/generate-all")
+def generate_all_fixed(student_id: int):
+    # Здесь должен быть твой старый код генерации, 
+    # просто мы даем ему тот адрес, который теперь ищет Flutter
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('SELECT * FROM students WHERE id = %s', (student_id,))
+            columns = [desc[0] for desc in cur.description]
+            row = cur.fetchone()
+            student_dict = dict(zip(columns, row))
+    
+    data_tuple = build_template_data(student_dict)
+    zip_path = generate_all_docs(data_tuple)
+    return FileResponse(zip_path, filename=f"docs_{student_id}.zip")
