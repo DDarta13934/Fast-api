@@ -38,6 +38,8 @@ def get_student_detail(student_id: int):
                 "org_name": r[3], "teacher": r[4], "start_date": r[5]
             }
 
+# Добавляем этот путь для совместимости с твоим JS
+@router.put("/practice/{student_id}", include_in_schema=False)
 @router.put("/{student_id}")
 def update_student(student_id: int, student: StudentUpdateModel):
     try:
@@ -53,7 +55,6 @@ def update_student(student_id: int, student: StudentUpdateModel):
                 conn.commit()
         return {"status": "ok"}
     except Exception as e:
-        # Если база данных выдаст ошибку, мы увидим её в логах Render
         print(f"Ошибка сохранения в БД: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
