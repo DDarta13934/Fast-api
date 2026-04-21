@@ -39,23 +39,35 @@ def get_student_detail(student_id: int):
                 "org_name": r[3], "teacher": r[4], "start_date": r[5]
             }
 
-# Добавляем этот путь для совместимости с твоим JS
 @router.put("/{student_id}")
 def update_student(student_id: int, student: StudentUpdateModel):
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
+                # ВАЖНО: Мы проверяем каждое поле. Если оно пришло как None, 
+                # мы берем старое значение из базы или оставляем пустым, 
+                # но "ФИО_обучающегося" не может быть NULL.
                 cur.execute('''
                     UPDATE students 
-                    SET "ФИО_обучающегося" = %s, "наименование_модуля" = %s, 
-                        "название_организации" = %s, "ФИО_отв_организации" = %s, "дата_начала" = %s
+                    SET 
+                        "ФИО_обучающегося" = COALESCE(%s, "ФИО_обучающегося"), 
+                        "наименование_модуля" = COALESCE(%s, "наименование_модуля"), 
+                        "название_организации" = COALESCE(%s, "название_организации"), 
+                        "ФИО_отв_организации" = COALESCE(%s, "ФИО_отв_организации"), 
+                        "дата_начала" = COALESCE(%s, "дата_начала")
                     WHERE id = %s
-                ''', (student.fio, student.module_name, student.org_name, 
-                      student.teacher, student.start_date, student_id))
+                ''', (
+                    student.fio, 
+                    student.module_name, 
+                    student.org_name, 
+                    student.teacher, 
+                    student.start_date, 
+                    student_id
+                ))
                 conn.commit()
         return {"status": "ok"}
     except Exception as e:
-        print(f"Ошибка сохранения в БД: {e}")
+        print(f"ОШИБКА БД: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{student_id}/generate-all")
