@@ -50,7 +50,6 @@ async function loadData() {
 async function saveData() {
     if (!currentId) return;
 
-    // Собираем дату из трех инпутов в одну строку (или как тебе удобнее хранить)
     const day = document.getElementById("start_day").value;
     const month = document.getElementById("start_month").value;
     const year = document.getElementById("start_year").value;
@@ -59,19 +58,39 @@ async function saveData() {
     const updateData = {
         fio: document.getElementById("fio").value,
         org_name: document.getElementById("org_name").value,
-        module_name: "ПМ.01",
-        teacher: document.getElementById("teacher").value, // Новое
-        start_date: fullDate                               // Новое
+        module_name: "ПМ.01", // Можно вынести в отдельное поле ввода
+        teacher: document.getElementById("teacher").value,
+        start_date: fullDate
     };
 
-    // ... далее fetch как обычно ...
+    show("⏳ Сохраняем...");
+
+    try {
+        const res = await fetch(`/students/${currentId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+        });
+
+        if (res.ok) {
+            show("✅ Данные обновлены в базе");
+        } else {
+            throw new Error("Ошибка сохранения");
+        }
+    } catch (err) {
+        show("❌ Не удалось сохранить данные");
+    }
 }
 
-// 📄 ГЕНЕРАЦИЯ ОДНОГО ДОКУМЕНТА
+// 📄 ГЕНЕРАЦИЯ (теперь обе кнопки ведут на ZIP, так как это работает)
 function generateDoc() {
-  if (!currentId) return show("❌ Выберите студента");
-  // Путь должен быть /students/{id}/generate-all
-  window.location = `/students/${currentId}/generate-all`;
+    generateAll();
+}
+
+function generateAll() {
+    if (!currentId) return show("❌ Сначала загрузите данные студента");
+    // Этот путь у нас работает в браузере!
+    window.location.href = `/students/${currentId}/generate-all`;
 }
 
 // 📦 ВСЕ ДОКУМЕНТЫ
