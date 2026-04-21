@@ -50,3 +50,11 @@ async def get_student(student_id: int):
     finally:
 
         conn.close()
+
+from app.routers.students import StudentUpdateModel, update_student
+
+# Этот эндпоинт поймает запрос PUT /practice/23 напрямую
+@app.put("/practice/{student_id}")
+async def legacy_save_data(student_id: int, student: StudentUpdateModel):
+    # Мы просто перенаправляем данные в уже готовую функцию из students.py
+    return update_student(student_id, student)
