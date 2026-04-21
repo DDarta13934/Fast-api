@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 
+from app.routers.students import StudentUpdateModel, update_student
+
 from fastapi.staticfiles import StaticFiles
 
 from app.routers.students import router as students_router
