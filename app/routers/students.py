@@ -1,150 +1,78 @@
 from fastapi import APIRouter, HTTPException
-
 from app.db import get_conn
-
 from fastapi.responses import FileResponse
-
 from app.services.document_service import generate_all_docs, build_template_data
-
 from pydantic import BaseModel
-
 import os
-
-
 
 router = APIRouter(prefix="/students", tags=["students"])
 
-
-
 class StudentUpdateModel(BaseModel):
-
     fio: str
-
     module_name: str
-
     org_name: str
-
     teacher: str      
-
     start_date: str   
 
-
-
 @router.get("/")
-
 def get_all_students():
-
     with get_conn() as conn:
-
         with conn.cursor() as cur:
-
             cur.execute('SELECT id, "ФИО_обучающегося" FROM students ORDER BY id')
-
             rows = cur.fetchall()
-
             return [{"id": r[0], "fio": r[1]} for r in rows]
 
-
-
 @router.get("/{student_id}")
-
 def get_student_detail(student_id: int):
-
     with get_conn() as conn:
-
         with conn.cursor() as cur:
-
             cur.execute('''
-
                 SELECT id, "ФИО_обучающегося", "наименование_модуля", 
-
                        "название_организации", "ФИО_отв_организации", "дата_начала"
-
                 FROM students WHERE id = %s
-
             ''', (student_id,))
-
             r = cur.fetchone()
-
             if not r: raise HTTPException(status_code=404)
-
             return {
-
                 "id": r[0], "fio": r[1], "module_name": r[2], 
-
                 "org_name": r[3], "teacher": r[4], "start_date": r[5]
-
             }
 
-
-
 @router.put("/{student_id}")
-
 def update_student(student_id: int, student: StudentUpdateModel):
-
-    with get_conn() as conn:
-
-        with conn.cursor() as cur:
-
-            cur.execute('''
-
-                UPDATE students 
-
-                SET "ФИО_обучающегося" = %s, "наименование_модуля" = %s, 
-
-                    "название_организации" = %s, "ФИО_отв_организации" = %s, "дата_начала" = %s
-
-                WHERE id = %s
-
-            ''', (student.fio, student.module_name, student.org_name, 
-
-                  student.teacher, student.start_date, student_id))
-
-            conn.commit()
-
-    return {"status": "ok"}
-
-
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('''
+                    UPDATE students 
+                    SET "ФИО_обучающегося" = %s, "наименование_модуля" = %s, 
+                        "название_организации" = %s, "ФИО_отв_организации" = %s, "дата_начала" = %s
+                    WHERE id = %s
+                ''', (student.fio, student.module_name, student.org_name, 
+                      student.teacher, student.start_date, student_id))
+                conn.commit()
+        return {"status": "ok"}
+    except Exception as e:
+        # Если база данных выдаст ошибку, мы увидим её в логах Render
+        print(f"Ошибка сохранения в БД: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{student_id}/generate-all")
-
 def generate_all(student_id: int):
-
     with get_conn() as conn:
-
-        with conn.cursor() as cur:
-
-            cur.execute('SELECT * FROM students WHERE id = %s', (student_id,))
-
-            columns = [desc[0] for desc in cur.description]
-
-            row = cur.fetchone()
-
-            student_dict = dict(zip(columns, row))
-
-    data_tuple = build_template_data(student_dict)
-
-    zip_path = generate_all_docs(data_tuple)
-
-    return FileResponse(zip_path, filename=f"docs_{student_id}.zip")
-
-@router.get("/{student_id}/generate-all")
-def generate_all_fixed(student_id: int):
-    # Здесь должен быть твой старый код генерации, 
-    # просто мы даем ему тот адрес, который теперь ищет Flutter
-    with get_conn() as conn:
+        # Используем обычный курсор для получения всех колонок
         with conn.cursor() as cur:
             cur.execute('SELECT * FROM students WHERE id = %s', (student_id,))
-            columns = [desc[0] for desc in cur.description]
             row = cur.fetchone()
+            if not row: raise HTTPException(status_code=404)
+            columns = [desc[0] for desc in cur.description]
             student_dict = dict(zip(columns, row))
     
     data_tuple = build_template_data(student_dict)
     zip_path = generate_all_docs(data_tuple)
     return FileResponse(zip_path, filename=f"docs_{student_id}.zip")
 
-# Этот маршрут специально для твоей кнопки, которая шлет /students/generate/23/...
+# Маршрут-перехватчик для старой кнопки
 @router.get("/generate/{student_id}/{suffix:path}")
 async def catch_old_button_request(student_id: int, suffix: str):
-    # Мы просто игнорируем "Аттестационный лист..." и вызываем рабочую функцию
     return generate_all(student_id)
