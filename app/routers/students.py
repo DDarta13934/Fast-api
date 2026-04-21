@@ -39,7 +39,6 @@ def get_student_detail(student_id: int):
             }
 
 # Добавляем этот путь для совместимости с твоим JS
-@router.put("/practice/{student_id}", include_in_schema=False)
 @router.put("/{student_id}")
 def update_student(student_id: int, student: StudentUpdateModel):
     try:
