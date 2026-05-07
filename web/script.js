@@ -4,22 +4,49 @@ tg.expand();
 const API = ""; 
 let currentId = null;
 
+// Красивые уведомления в блоке result
 function show(text) {
     const resDiv = document.getElementById("result");
+    if (!resDiv) return;
     resDiv.innerText = text;
-    if (text.includes("✅")) {
-        resDiv.className = "alert alert-success py-2 text-center small mb-3";
-    } else if (text.includes("❌")) {
-        resDiv.className = "alert alert-danger py-2 text-center small mb-3";
-    } else {
-        resDiv.className = "alert alert-info py-2 text-center small mb-3";
+    resDiv.className = "alert py-2 text-center small mb-3 " + 
+        (text.includes("✅") ? "alert-success" : text.includes("❌") ? "alert-danger" : "alert-info");
+}
+
+// 1. ЗАГРУЗКА СПИСКА СТУДЕНТОВ (Вызывается при загрузке страницы)
+async function fetchStudents() {
+    try {
+        const res = await fetch('/students'); 
+        const students = await res.json();
+        const select = document.getElementById("studentSelect"); // Убедись, что в HTML есть этот ID
+        
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Выберите студента --</option>';
+
+        students.forEach(s => {
+            let opt = document.createElement("option");
+            opt.value = s.id;
+            // Проверяем разные варианты ключей имени
+            opt.innerHTML = s.fio || s.ФИО_обучающегося || `ID: ${s.id}`;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("Ошибка загрузки списка:", e);
     }
 }
 
-// 📥 ЗАГРУЗКА (заполняем все 24 поля)
+// Запускаем подгрузку списка сразу
+fetchStudents();
+
+// 2. ЗАГРУЗКА ДАННЫХ ВЫБРАННОГО СТУДЕНТА
 async function loadData() {
-    currentId = document.getElementById("practiceId").value;
-    if (!currentId) return;
+    const select = document.getElementById("studentSelect");
+    const practiceInput = document.getElementById("practiceId");
+    
+    // Берем ID либо из списка, либо из ручного ввода
+    currentId = (select && select.value) || (practiceInput && practiceInput.value);
+
+    if (!currentId) return show("❌ Выберите студента из списка");
     
     show("⏳ Загружаем данные...");
 
@@ -29,31 +56,23 @@ async function loadData() {
 
         if (res.status === 404) throw new Error("not_found");
 
-        // Расставляем данные по ID (имена ключей должны совпадать с JSON из Python)
-        document.getElementById("fio").value = data.fio || "";
-        document.getElementById("birth_date").value = data.birth_date || "";
-        document.getElementById("module_name").value = data.module_name || "";
-        document.getElementById("start_day").value = data.start_day || "";
-        document.getElementById("start_month").value = data.start_month || "";
-        document.getElementById("start_year").value = data.start_year || "";
-        document.getElementById("end_day").value = data.end_day || "";
-        document.getElementById("end_month").value = data.end_month || "";
-        document.getElementById("end_year").value = data.end_year || "";
-        document.getElementById("spec_code").value = data.spec_code || "";
-        document.getElementById("spec_name").value = data.spec_name || "";
-        document.getElementById("hours").value = data.hours || "";
-        document.getElementById("teacher_fio").value = data.teacher_fio || "";
-        document.getElementById("teacher_phone").value = data.teacher_phone || "";
-        document.getElementById("org_name").value = data.org_name || "";
-        document.getElementById("org_address").value = data.org_address || "";
-        document.getElementById("rooms").value = data.rooms || "";
-        document.getElementById("org_boss_post").value = data.org_boss_post || "";
-        document.getElementById("org_boss_fio").value = data.org_boss_fio || "";
-        document.getElementById("org_boss_phone").value = data.org_boss_phone || "";
-        document.getElementById("org_boss_initials").value = data.org_boss_initials || "";
-        document.getElementById("resp_post").value = data.resp_post || "";
-        document.getElementById("resp_fio").value = data.resp_fio || "";
-        document.getElementById("resp_phone").value = data.resp_phone || "";
+        // Маппинг данных (ключ в JSON : ID инпута в HTML)
+        const fields = {
+            "fio": data.fio, "birth_date": data.birth_date, "module_name": data.module_name,
+            "start_day": data.start_day, "start_month": data.start_month, "start_year": data.start_year,
+            "end_day": data.end_day, "end_month": data.end_month, "end_year": data.end_year,
+            "spec_code": data.spec_code, "spec_name": data.spec_name, "hours": data.hours,
+            "teacher_fio": data.teacher_fio, "teacher_phone": data.teacher_phone, "org_name": data.org_name,
+            "org_address": data.org_address, "rooms": data.rooms, "org_boss_post": data.org_boss_post,
+            "org_boss_fio": data.org_boss_fio, "org_boss_phone": data.org_boss_phone, 
+            "org_boss_initials": data.org_boss_initials, "resp_post": data.resp_post,
+            "resp_fio": data.resp_fio, "resp_phone": data.resp_phone
+        };
+
+        for (let key in fields) {
+            const el = document.getElementById(key);
+            if (el) el.value = fields[key] || "";
+        }
         
         document.getElementById("form").style.display = "block";
         show("✅ Данные загружены");
@@ -62,84 +81,52 @@ async function loadData() {
     }
 }
 
-// 💾 СОХРАНЕНИЕ (собираем все 24 поля)
+// 3. СОХРАНЕНИЕ
 async function saveData() {
     if (!currentId) return;
 
-    // Собираем объект в точном соответствии с StudentUpdateModel в Python
-    const updateData = {
-        fio: document.getElementById("fio").value,
-        birth_date: document.getElementById("birth_date").value,
-        module_name: document.getElementById("module_name").value,
-        start_day: document.getElementById("start_day").value,
-        start_month: document.getElementById("start_month").value,
-        start_year: document.getElementById("start_year").value,
-        end_day: document.getElementById("end_day").value,
-        end_month: document.getElementById("end_month").value,
-        end_year: document.getElementById("end_year").value,
-        spec_code: document.getElementById("spec_code").value,
-        spec_name: document.getElementById("spec_name").value,
-        hours: document.getElementById("hours").value,
-        teacher_fio: document.getElementById("teacher_fio").value,
-        teacher_phone: document.getElementById("teacher_phone").value,
-        org_name: document.getElementById("org_name").value,
-        org_address: document.getElementById("org_address").value,
-        rooms: document.getElementById("rooms").value,
-        org_boss_post: document.getElementById("org_boss_post").value,
-        org_boss_fio: document.getElementById("org_boss_fio").value,
-        org_boss_phone: document.getElementById("org_boss_phone").value,
-        org_boss_initials: document.getElementById("org_boss_initials").value,
-        resp_post: document.getElementById("resp_post").value,
-        resp_fio: document.getElementById("resp_fio").value,
-        resp_phone: document.getElementById("resp_phone").value
-    };
+    const updateData = {};
+    const fieldIds = [
+        "fio", "birth_date", "module_name", "start_day", "start_month", "start_year",
+        "end_day", "end_month", "end_year", "spec_code", "spec_name", "hours",
+        "teacher_fio", "teacher_phone", "org_name", "org_address", "rooms",
+        "org_boss_post", "org_boss_fio", "org_boss_phone", "org_boss_initials",
+        "resp_post", "resp_fio", "resp_phone"
+    ];
+
+    fieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) updateData[id] = el.value;
+    });
 
     show("⏳ Сохраняем...");
 
     try {
-        // Отправляем на /students/, так как мы обновили роутеры
         const res = await fetch(`/students/${currentId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updateData)
         });
 
-        if (res.ok) {
-            show("✅ Данные обновлены в базе");
-        } else {
-            const errorInfo = await res.json();
-            console.error("Ошибка сервера:", errorInfo);
-            throw new Error("Ошибка сохранения");
-        }
+        if (res.ok) show("✅ Данные обновлены");
+        else throw new Error();
     } catch (err) {
-        show("❌ Не удалось сохранить данные");
+        show("❌ Не удалось сохранить");
     }
 }
 
-// 📄 ГЕНЕРАЦИЯ
+// 4. ГЕНЕРАЦИЯ (Выбор документов)
 function generateAll() {
-    if (!currentId) return show("❌ Сначала загрузите данные студента");
+    if (!currentId) return show("❌ Сначала загрузите данные");
 
-    // Собираем все выбранные чекбоксы
+    // Ищем все чекбоксы с классом doc-checkbox
     const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
     const selectedDocs = Array.from(checkboxes).map(cb => cb.value);
 
     if (selectedDocs.length === 0) {
-        return show("❌ Выберите хотя бы один документ");
+        return show("❌ Выберите хотя бы один документ (галочками)");
     }
 
-    // Формируем URL с параметрами (передаем список файлов через запятую)
     const filesParam = encodeURIComponent(selectedDocs.join(','));
     window.location.href = `/students/${currentId}/generate-all?files=${filesParam}`;
-}
-
-// 📨 ОТПРАВКА В TELEGRAM
-function sendToTelegram() {
-    if (!tg.initDataUnsafe.user) return show("❌ Откройте через Telegram");
-    const chatId = tg.initDataUnsafe.user.id;
-    show("📨 Отправляем в Telegram...");
-
-    fetch(`${API}/send/${currentId}/Документы/${chatId}`)
-        .then(() => show("✅ Документы отправлены"))
-        .catch(() => show("❌ Ошибка отправки"));
 }
