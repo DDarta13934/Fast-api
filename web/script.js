@@ -1,118 +1,132 @@
-// Определяем базовый URL API
-const API_BASE = window.location.origin + '/api';
+// ===== Автоопределение API =====
+let API_STUDENTS_LIST = null;   // GET-эндпоинт для списка студентов
+let API_STUDENT_DETAIL = null;  // GET-эндпоинт для одного студента (с {id})
+let API_STUDENT_UPDATE = null;  // PUT-эндпоинт для сохранения
 let currentId = null;
 
-// Функция для отладки
-function debugLog(message, data) {
-    console.log(`[DEBUG] ${message}:`, data);
+async function discoverEndpoints() {
+    try {
+        const res = await fetch('/openapi.json');
+        if (!res.ok) throw new Error('openapi.json не найден');
+        const spec = await res.json();
+        const paths = spec.paths || {};
+
+        for (const [path, methods] of Object.entries(paths)) {
+            const get = methods.get;
+            const put = methods.put;
+
+            // Ищем GET, который возвращает список (массив)
+            if (get) {
+                const ok = get.responses?.['200'] || get.responses?.[200];
+                if (ok) {
+                    // Проверяем, нет ли параметра id / student_id в пути
+                    const hasIdParam = path.includes('{student_id}') || path.includes('{id}');
+                    if (!hasIdParam && !API_STUDENTS_LIST) {
+                        API_STUDENTS_LIST = path;
+                        console.log('[AUTO] Список студентов:', path);
+                    } else if (hasIdParam && !API_STUDENT_DETAIL) {
+                        API_STUDENT_DETAIL = path;
+                        console.log('[AUTO] Детали студента:', path);
+                    }
+                }
+            }
+
+            // Ищем PUT
+            if (put && !API_STUDENT_UPDATE) {
+                API_STUDENT_UPDATE = path;
+                console.log('[AUTO] Обновление студента:', path);
+            }
+        }
+
+        if (!API_STUDENTS_LIST) {
+            console.warn('Не удалось найти эндпоинт списка студентов, использую /students');
+            API_STUDENTS_LIST = '/students';
+        }
+        if (!API_STUDENT_DETAIL) {
+            console.warn('Не удалось найти эндпоинт одного студента, использую /students/{id}');
+            API_STUDENT_DETAIL = '/students/{id}';
+        }
+        if (!API_STUDENT_UPDATE) {
+            console.warn('Не удалось найти эндпоинт обновления, использую /students/{id}');
+            API_STUDENT_UPDATE = '/students/{id}';
+        }
+
+        return true;
+    } catch (e) {
+        console.error('Ошибка автоопределения эндпоинтов:', e);
+        // Fallback — пробуем вручную
+        API_STUDENTS_LIST = '/students';
+        API_STUDENT_DETAIL = '/students/{id}';
+        API_STUDENT_UPDATE = '/students/{id}';
+        return false;
+    }
 }
 
-// 1. ЗАГРУЗКА СПИСКА ПРИ ОТКРЫТИИ
+// ===== Загрузка списка =====
 async function loadStudents() {
     const loadingBlock = document.getElementById('loadingBlock');
     const errorBlock = document.getElementById('errorBlock');
     const mainInterface = document.getElementById('mainInterface');
-    
+
     loadingBlock.style.display = 'block';
     errorBlock.style.display = 'none';
     mainInterface.style.display = 'none';
-    
-    // Пробуем разные варианты эндпоинтов (FastAPI часто использует /api/students или /students)
-    const endpoints = [
-        `${API_BASE}/students`,
-        `${API_BASE}/students/`,
-        '/api/students',
-        '/api/students/',
-        '/students',
-        '/students/'
-    ];
-    
-    let students = null;
-    let successEndpoint = null;
-    
-    for (const endpoint of endpoints) {
-        try {
-            debugLog('Пробуем endpoint', endpoint);
-            const response = await fetch(endpoint);
-            
-            if (response.ok) {
-                const data = await response.json();
-                debugLog('Успешный ответ от', endpoint);
-                debugLog('Данные', data);
-                
-                // Проверяем, что data - это массив
-                if (Array.isArray(data)) {
-                    students = data;
-                } else if (data.students && Array.isArray(data.students)) {
-                    students = data.students;
-                } else if (data.data && Array.isArray(data.data)) {
-                    students = data.data;
-                } else {
-                    debugLog('Неизвестный формат данных', data);
-                    continue;
-                }
-                
-                successEndpoint = endpoint;
-                break;
-            } else {
-                debugLog('Ошибка ответа от', `${endpoint}: ${response.status} ${response.statusText}`);
-            }
-        } catch (error) {
-            debugLog('Ошибка запроса к', `${endpoint}: ${error.message}`);
-        }
+
+    if (!API_STUDENTS_LIST) {
+        await discoverEndpoints();
     }
-    
-    if (students && successEndpoint) {
-        // Сохраняем рабочий endpoint для дальнейшего использования
-        window.workingEndpoint = successEndpoint.replace(/\/$/, '');
-        
+
+    try {
+        const response = await fetch(API_STUDENTS_LIST);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        let students;
+        if (Array.isArray(data)) students = data;
+        else if (data.students) students = data.students;
+        else if (data.data) students = data.data;
+        else throw new Error('Неизвестный формат списка');
+
         const select = document.getElementById("studentSelect");
         select.innerHTML = '<option value="">-- Выберите студента --</option>';
-        
-        if (students.length === 0) {
-            select.innerHTML += '<option value="" disabled>Нет студентов в базе</option>';
-        } else {
-            students.forEach(s => {
-                let opt = document.createElement("option");
-                opt.value = s.id || s.ID || s.student_id;
-                opt.textContent = s.fio || s.ФИО || s.name || s.full_name || `Студент #${s.id || s.ID}`;
-                select.appendChild(opt);
-            });
-        }
-        
+        students.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.id ?? s.ID ?? s.student_id;
+            opt.textContent = s.fio || s.ФИО || s.name || s.full_name || `Студент #${opt.value}`;
+            select.appendChild(opt);
+        });
+
         loadingBlock.style.display = 'none';
         mainInterface.style.display = 'block';
-        
         showMessage(`✅ Загружено ${students.length} студентов`, 'success');
-    } else {
+    } catch (error) {
         loadingBlock.style.display = 'none';
         errorBlock.style.display = 'block';
-        
-        let errorMsg = 'Не удалось загрузить список студентов. ';
-        errorMsg += 'Проверьте, что сервер запущен и база данных доступна. ';
-        errorMsg += 'Проверьте консоль браузера (F12) для деталей.';
-        
-        document.getElementById('errorMessage').textContent = errorMsg;
-        debugLog('Все endpoints недоступны', 'Проверьте сервер');
+        document.getElementById('errorMessage').textContent =
+            `Не удалось загрузить список: ${error.message}`;
+        console.error(error);
     }
 }
 
 function retryLoadStudents() {
-    loadStudents();
+    discoverEndpoints().then(() => loadStudents());
 }
 
-// Загружаем студентов при загрузке страницы
-window.addEventListener('DOMContentLoaded', loadStudents);
+// Запускаем после загрузки DOM
+window.addEventListener('DOMContentLoaded', async () => {
+    await discoverEndpoints();
+    await loadStudents();
 
-// Авто-загрузка при выборе из списка
-document.getElementById('studentSelect').addEventListener('change', function() {
-    if (this.value) {
-        document.getElementById("practiceId").value = this.value;
-        loadData();
-    }
+    // Обработчик выбора студента
+    document.getElementById('studentSelect').addEventListener('change', function () {
+        if (this.value) {
+            document.getElementById("practiceId").value = this.value;
+            loadData();
+        }
+    });
 });
 
-// 2. ЗАГРУЗКА ДАННЫХ СТУДЕНТА
+// ===== Загрузка данных одного студента =====
 async function loadData() {
     currentId = document.getElementById("practiceId").value;
     if (!currentId) {
@@ -120,34 +134,24 @@ async function loadData() {
         return;
     }
 
+    if (!API_STUDENT_DETAIL) await discoverEndpoints();
+    const url = API_STUDENT_DETAIL.replace('{student_id}', currentId).replace('{id}', currentId);
     showMessage('⏳ Загрузка данных...', 'info');
-    
-    const baseEndpoint = window.workingEndpoint || `${API_BASE}/students`;
-    const url = `${baseEndpoint}/${currentId}`;
-    
-    debugLog('Загрузка данных студента', url);
-    
+
     try {
         const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        debugLog('Данные студента', data);
-        
-        // Извлекаем данные студента из ответа
-        let studentData = data;
-        if (data.student) studentData = data.student;
-        if (data.data) studentData = data.data;
-        
-        // Список всех полей для сопоставления
-        const fieldMappings = {
+
+        let student = data;
+        if (data.student) student = data.student;
+        else if (data.data) student = data.data;
+
+        const fieldMap = {
             "fio": ["fio", "ФИО", "full_name", "name", "ФИО_обучающегося"],
-            "birth_date": ["birth_date", "birthDate", "дата_рождения", "Дата_рождения"],
-            "spec_code": ["spec_code", "specCode", "код_специальности", "Код_специальности"],
-            "spec_name": ["spec_name", "specName", "специальность", "Наименование_специальности"],
+            "birth_date": ["birth_date", "birthDate", "дата_рождения"],
+            "spec_code": ["spec_code", "specCode", "код_специальности"],
+            "spec_name": ["spec_name", "specName", "специальность"],
             "module_name": ["module_name", "moduleName", "модуль", "ПМ"],
             "hours": ["hours", "часы", "hours_count"],
             "start_day": ["start_day", "startDay"],
@@ -158,7 +162,7 @@ async function loadData() {
             "end_year": ["end_year", "endYear"],
             "teacher_fio": ["teacher_fio", "teacherFio", "преподаватель"],
             "teacher_phone": ["teacher_phone", "teacherPhone", "телефон_преподавателя"],
-            "org_name": ["org_name", "orgName", "организация", "Название_организации"],
+            "org_name": ["org_name", "orgName", "организация"],
             "org_address": ["org_address", "orgAddress", "адрес_организации"],
             "rooms": ["rooms", "помещения"],
             "org_boss_post": ["org_boss_post", "orgBossPost", "должность_рук"],
@@ -169,39 +173,36 @@ async function loadData() {
             "resp_fio": ["resp_fio", "respFio", "фио_отв"],
             "resp_phone": ["resp_phone", "respPhone", "телефон_отв"]
         };
-        
-        // Заполняем поля
-        for (const [fieldId, possibleNames] of Object.entries(fieldMappings)) {
-            const el = document.getElementById(fieldId);
+
+        for (const [id, keys] of Object.entries(fieldMap)) {
+            const el = document.getElementById(id);
             if (!el) continue;
-            
-            let value = '';
-            for (const name of possibleNames) {
-                if (studentData[name] !== undefined && studentData[name] !== null) {
-                    value = studentData[name];
+            let val = '';
+            for (const k of keys) {
+                if (student[k] !== undefined && student[k] !== null) {
+                    val = student[k];
                     break;
                 }
             }
-            el.value = value;
+            el.value = val;
         }
-        
+
         document.getElementById("formContainer").style.display = "block";
         showMessage('✅ Данные загружены', 'success');
         window.scrollTo({ top: 200, behavior: 'smooth' });
-        
     } catch (error) {
-        debugLog('Ошибка загрузки', error);
         showMessage(`❌ Ошибка: ${error.message}`, 'danger');
+        console.error(error);
     }
 }
 
-// 3. СОХРАНЕНИЕ
+// ===== Сохранение =====
 async function saveData() {
     if (!currentId) {
         showMessage('❌ Сначала загрузите данные студента', 'danger');
         return;
     }
-    
+
     const payload = {};
     const fields = [
         "fio", "birth_date", "spec_code", "spec_name", "module_name", "hours",
@@ -210,72 +211,54 @@ async function saveData() {
         "org_boss_post", "org_boss_fio", "org_boss_phone", "org_boss_initials",
         "resp_post", "resp_fio", "resp_phone"
     ];
-
     fields.forEach(id => {
         const el = document.getElementById(id);
         if (el) payload[id] = el.value;
     });
 
-    const baseEndpoint = window.workingEndpoint || `${API_BASE}/students`;
-    const url = `${baseEndpoint}/${currentId}`;
-    
-    debugLog('Сохранение данных', { url, payload });
+    if (!API_STUDENT_UPDATE) await discoverEndpoints();
+    const url = API_STUDENT_UPDATE.replace('{student_id}', currentId).replace('{id}', currentId);
+
     showMessage('⏳ Сохранение...', 'info');
-    
     try {
-        const response = await fetch(url, {
+        const res = await fetch(url, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
-        
-        if (response.ok) {
-            const result = await response.json();
-            debugLog('Результат сохранения', result);
-            showMessage('✅ Данные успешно сохранены!', 'success');
-        } else {
-            const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showMessage('✅ Данные сохранены', 'success');
     } catch (error) {
-        debugLog('Ошибка сохранения', error);
         showMessage(`❌ Ошибка сохранения: ${error.message}`, 'danger');
+        console.error(error);
     }
 }
 
-// 4. ГЕНЕРАЦИЯ ДОКУМЕНТОВ
+// ===== Генерация docx =====
 function generateDoc() {
     if (!currentId) {
         showMessage('❌ Сначала выберите студента', 'danger');
         return;
     }
-
-    const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
-    const selectedDocs = Array.from(checkboxes).map(cb => cb.value);
-
-    if (selectedDocs.length === 0) {
-        showMessage('❌ Выберите хотя бы один документ', 'danger');
+    const checked = document.querySelectorAll('.doc-checkbox:checked');
+    if (checked.length === 0) {
+        showMessage('❌ Выберите документы', 'danger');
         return;
     }
-
-    const baseEndpoint = window.workingEndpoint || `${API_BASE}/students`;
-    const filesParam = encodeURIComponent(selectedDocs.join(','));
-    const url = `${baseEndpoint}/${currentId}/generate-all?files=${filesParam}`;
-    
-    debugLog('Генерация документов', url);
-    showMessage('📄 Запускаем генерацию документов...', 'info');
-    window.location.href = url;
+    const files = Array.from(checked).map(cb => cb.value).join(',');
+    // Пусть генерация идёт по тому же PUT-эндпоинту, но с /generate-all
+    const base = API_STUDENT_UPDATE || '/students/{id}';
+    const genUrl = base
+        .replace('{student_id}', currentId)
+        .replace('{id}', currentId) + '/generate-all?files=' + encodeURIComponent(files);
+    showMessage('📄 Запускаем генерацию...', 'info');
+    window.location.href = genUrl;
 }
 
-// Вспомогательная функция для показа сообщений
 function showMessage(text, type = 'info') {
-    const resultDiv = document.getElementById('result');
-    resultDiv.textContent = text;
-    resultDiv.className = `alert alert-${type} py-2 text-center small mb-3`;
-    resultDiv.style.display = 'block';
-    
-    // Автоматически скрываем через 5 секунд
-    setTimeout(() => {
-        resultDiv.style.display = 'none';
-    }, 5000);
+    const div = document.getElementById('result');
+    div.textContent = text;
+    div.className = `alert alert-${type} py-2 text-center small mb-3`;
+    div.style.display = 'block';
+    setTimeout(() => { div.style.display = 'none'; }, 5000);
 }
