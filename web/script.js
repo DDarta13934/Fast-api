@@ -115,18 +115,26 @@ async function saveData() {
     }
 }
 
-// 4. ГЕНЕРАЦИЯ (Выбор документов)
-function generateAll() {
-    if (!currentId) return show("❌ Сначала загрузите данные");
+// 4. ГЕНЕРАЦИЯ (заменяем твою старую функцию на эту)
+function generateDoc() {
+    if (!currentId) {
+        return show("❌ Сначала выберите студента и загрузите данные");
+    }
 
-    // Ищем все чекбоксы с классом doc-checkbox
+    // 1. Ищем все чекбоксы документов, которые выбрал пользователь
     const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
     const selectedDocs = Array.from(checkboxes).map(cb => cb.value);
 
+    // 2. Проверяем, выбрано ли хоть что-то
     if (selectedDocs.length === 0) {
-        return show("❌ Выберите хотя бы один документ (галочками)");
+        return show("❌ Выберите хотя бы один документ галочкой");
     }
 
+    show("⏳ Подготовка архива...");
+
+    // 3. Формируем строку с файлами (через запятую)
     const filesParam = encodeURIComponent(selectedDocs.join(','));
+    
+    // 4. Отправляем запрос на сервер (именно этот путь мы прописали в Python)
     window.location.href = `/students/${currentId}/generate-all?files=${filesParam}`;
 }
