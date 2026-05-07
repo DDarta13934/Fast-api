@@ -119,7 +119,18 @@ async function saveData() {
 // 📄 ГЕНЕРАЦИЯ
 function generateAll() {
     if (!currentId) return show("❌ Сначала загрузите данные студента");
-    window.location.href = `/students/${currentId}/generate-all`;
+
+    // Собираем все выбранные чекбоксы
+    const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
+    const selectedDocs = Array.from(checkboxes).map(cb => cb.value);
+
+    if (selectedDocs.length === 0) {
+        return show("❌ Выберите хотя бы один документ");
+    }
+
+    // Формируем URL с параметрами (передаем список файлов через запятую)
+    const filesParam = encodeURIComponent(selectedDocs.join(','));
+    window.location.href = `/students/${currentId}/generate-all?files=${filesParam}`;
 }
 
 // 📨 ОТПРАВКА В TELEGRAM
