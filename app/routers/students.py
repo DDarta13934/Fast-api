@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException
-from app.db import get_conn
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
-from app.services.document_service import generate_all_docs, build_template_data
 from pydantic import BaseModel
 from typing import Optional
 import os
 
+from app.db import get_conn
+# Убедись, что эти функции импортированы из твоих сервисов
+from app.services.document_service import generate_all_docs, build_template_data 
+
 router = APIRouter(prefix="/students", tags=["students"])
 
-# 1. Полная модель данных (24 поля)
+# 1. Модель данных для всех 24 полей
 class StudentUpdateModel(BaseModel):
     fio: Optional[str] = None
     birth_date: Optional[str] = None
@@ -35,65 +37,56 @@ class StudentUpdateModel(BaseModel):
     resp_fio: Optional[str] = None
     resp_phone: Optional[str] = None
 
-@router.get("/")
-def get_all_students():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute('SELECT id, "ФИО_обучающегося" FROM students ORDER BY id')
-            rows = cur.fetchall()
-            return [{"id": r[0], "fio": r[1]} for r in rows]
-
-# 2. Получение всех деталей студента для заполнения полей на сайте
+# 2. Эндпоинт получения данных (GET)
 @router.get("/{student_id}")
-def get_student_detail(student_id: int):
+def get_student(student_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute('SELECT * FROM students WHERE id = %s', (student_id,))
             row = cur.fetchone()
-            if not row: 
-                raise HTTPException(status_code=404)
+            if not row:
+                raise HTTPException(status_code=404, detail="Студент не найден")
             
-            # Превращаем кортеж из БД в удобный словарь (key: value)
+            # Маппим колонки БД на ключи JSON для фронтенда
             columns = [desc[0] for desc in cur.description]
-            s = dict(zip(columns, row))
+            student_dict = dict(zip(columns, row))
             
+            # Превращаем названия из БД в названия для JS (согласно твоей модели)
             return {
-                "id": s.get("id"),
-                "fio": s.get("ФИО_обучающегося"),
-                "birth_date": s.get("Дата_рождения"),
-                "module_name": s.get("наименование_модуля"),
-                "start_day": s.get("день_начала_ПП"),
-                "start_month": s.get("месяц_начала_ПП"),
-                "start_year": s.get("год_начала_ПП"),
-                "end_day": s.get("день_конца_ПП"),
-                "end_month": s.get("месяц_конца_ПП"),
-                "end_year": s.get("год_конца_ПП"),
-                "spec_code": s.get("код_специальности"),
-                "spec_name": s.get("наименование_специальности"),
-                "hours": s.get("количество_часов_ПП"),
-                "teacher_fio": s.get("ФИО_преподавателя"),
-                "teacher_phone": s.get("тел_преподаваттеля"),
-                "org_name": s.get("название_организации"),
-                "org_address": s.get("адрес_организации"),
-                "rooms": s.get("Наименование_помещений"),
-                "org_boss_post": s.get("должность_отв_организации"),
-                "org_boss_fio": s.get("ФИО_отв_организации"),
-                "org_boss_phone": s.get("тел_отв_организации"),
-                "org_boss_initials": s.get("инициалы_отв_организации"),
-                "resp_post": s.get("должность_ответственного"),
-                "resp_fio": s.get("ФИО_ответственного"),
-                "resp_phone": s.get("тел_ответственного")
+                "fio": student_dict.get("ФИО_обучающегося"),
+                "birth_date": student_dict.get("Дата_рождения"),
+                "module_name": student_dict.get("наименование_модуля"),
+                "start_day": student_dict.get("день_начала_ПП"),
+                "start_month": student_dict.get("месяц_начала_ПП"),
+                "start_year": student_dict.get("год_начала_ПП"),
+                "end_day": student_dict.get("день_конца_ПП"),
+                "end_month": student_dict.get("месяц_конца_ПП"),
+                "end_year": student_dict.get("год_конца_ПП"),
+                "spec_code": student_dict.get("код_специальности"),
+                "spec_name": student_dict.get("наименование_специальности"),
+                "hours": student_dict.get("количество_часов_ПП"),
+                "teacher_fio": student_dict.get("ФИО_преподавателя"),
+                "teacher_phone": student_dict.get("тел_преподаваттеля"),
+                "org_name": student_dict.get("название_организации"),
+                "org_address": student_dict.get("адрес_организации"),
+                "rooms": student_dict.get("Наименование_помещений"),
+                "org_boss_post": student_dict.get("должность_отв_организации"),
+                "org_boss_fio": student_dict.get("ФИО_отв_организации"),
+                "org_boss_phone": student_dict.get("тел_отв_организации"),
+                "org_boss_initials": student_dict.get("инициалы_отв_организации"),
+                "resp_post": student_dict.get("должность_ответственного"),
+                "resp_fio": student_dict.get("ФИО_ответственного"),
+                "resp_phone": student_dict.get("тел_ответственного"),
             }
 
-# 3. Обновление всех 24 полей в БД
+# 3. Эндпоинт сохранения (PUT)
 @router.put("/{student_id}")
 def update_student(student_id: int, student: StudentUpdateModel):
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute('''
-                    UPDATE students 
-                    SET 
+                    UPDATE students SET 
                         "ФИО_обучающегося" = COALESCE(%s, "ФИО_обучающегося"),
                         "Дата_рождения" = COALESCE(%s, "Дата_рождения"),
                         "наименование_модуля" = COALESCE(%s, "наименование_модуля"),
@@ -133,23 +126,35 @@ def update_student(student_id: int, student: StudentUpdateModel):
                 conn.commit()
         return {"status": "ok"}
     except Exception as e:
-        print(f"ОШИБКА БД: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# 4. Эндпоинт генерации (GET с фильтром файлов)
 @router.get("/{student_id}/generate-all")
-def generate_all(student_id: int):
+def generate_all(student_id: int, files: Optional[str] = Query(None)):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute('SELECT * FROM students WHERE id = %s', (student_id,))
             row = cur.fetchone()
-            if not row: raise HTTPException(status_code=404)
+            if not row: 
+                raise HTTPException(status_code=404)
+            
             columns = [desc[0] for desc in cur.description]
             student_dict = dict(zip(columns, row))
     
+    # Парсим список выбранных файлов
+    selected_files = files.split(',') if files else None
+    
+    # Формируем данные для docx-шаблонов
     data_tuple = build_template_data(student_dict)
-    zip_path = generate_all_docs(data_tuple)
-    return FileResponse(zip_path, filename=f"docs_{student_id}.zip")
-
-@router.get("/generate/{student_id}/{suffix:path}")
-async def catch_old_button_request(student_id: int, suffix: str):
-    return generate_all(student_id)
+    
+    # Генерируем ZIP (важно, чтобы функция принимала selected_files)
+    zip_path = generate_all_docs(data_tuple, selected_files) 
+    
+    if not os.path.exists(zip_path):
+        raise HTTPException(status_code=500, detail="Ошибка генерации архива")
+        
+    return FileResponse(
+        zip_path, 
+        filename=f"docs_{student_id}.zip",
+        media_type="application/zip"
+    )
