@@ -10,11 +10,11 @@
         .main-card { border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none; background: white; padding: 25px; margin-top: 20px; }
         .section-title { border-left: 4px solid #0d6efd; padding-left: 10px; margin: 20px 0 15px; font-weight: bold; color: #0d6efd; }
         .form-label { font-weight: 600; font-size: 0.85rem; margin-bottom: 3px; color: #555; }
-        .form-control-sm { border-radius: 6px; }
         .btn-group-action { position: sticky; bottom: 20px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); z-index: 100; }
     </style>
 </head>
 <body>
+
 <div class="container">
     <div class="main-card">
         <h2 class="mb-4">📝 Редактор данных практики</h2>
@@ -35,6 +35,8 @@
             </div>
         </div>
 
+        <div id="result" class="alert alert-info py-2 text-center small mb-3" style="display:none"></div>
+
         <hr>
 
         <div id="formContainer" style="display:none">
@@ -51,30 +53,11 @@
                 </div>
             </div>
 
-    <div class="mb-3">
-    <label class="form-label">Выберите документы для генерации:</label>
-    <div class="form-check">
-        <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист производственная.docx" id="doc1" checked>
-        <label class="form-check-label" for="doc1">Аттестационный лист (произв.)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист учебная.docx" id="doc2">
-        <label class="form-check-label" for="doc2">Аттестационный лист (учебн.)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт производственная.docx" id="doc3" checked>
-        <label class="form-check-label" for="doc3">Отчёт (произв.)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт учебная.docx" id="doc4">
-        <label class="form-check-label" for="doc4">Отчёт (учебн.)</label>
-    </div>
-</div>
             <div class="section-title">Специальность и модуль</div>
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Код специальности</label>
-                    <input id="spec_code" class="form-control" placeholder="09.02.07">
+                    <input id="spec_code" class="form-control">
                 </div>
                 <div class="col-md-9">
                     <label class="form-label">Наименование специальности</label>
@@ -86,7 +69,7 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Часов практики</label>
-                    <input id="hours" class="form-control" placeholder="72">
+                    <input id="hours" class="form-control">
                 </div>
             </div>
 
@@ -159,7 +142,7 @@
             </div>
 
             <div class="section-title">Лицо, ответственное за практику</div>
-            <div class="row g-3">
+            <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <label class="form-label">Должность</label>
                     <input id="resp_post" class="form-control">
@@ -173,34 +156,36 @@
                     <input id="resp_phone" class="form-control">
                 </div>
             </div>
-<div class="mb-4 p-3 border rounded bg-light">
-    <label class="form-label d-block mb-2">Какие документы сгенерировать?</label>
-    <div class="row">
-        <div class="col-md-6">
-            <div class="form-check">
-                <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист производственная.docx" id="doc1" checked>
-                <label class="form-check-label" for="doc1">Аттестационный лист (произв.)</label>
+
+            <div class="card p-3 mb-4 bg-light shadow-sm">
+                <h6 class="mb-3">📄 Какие документы генерируем?</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист производственная.docx" id="d1" checked>
+                            <label class="form-check-label" for="d1">Аттестационный (произв.)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт производственная.docx" id="d2" checked>
+                            <label class="form-check-label" for="d2">Отчёт (произв.)</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист учебная.docx" id="d3">
+                            <label class="form-check-label" for="d3">Аттестационный (учебн.)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт учебная.docx" id="d4">
+                            <label class="form-check-label" for="d4">Отчёт (учебн.)</label>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="form-check">
-                <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист учебная.docx" id="doc2">
-                <label class="form-check-label" for="doc2">Аттестационный лист (учебн.)</label>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-check">
-                <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт производственная.docx" id="doc3" checked>
-                <label class="form-check-label" for="doc3">Отчёт (произв.)</label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт учебная.docx" id="doc4">
-                <label class="form-check-label" for="doc4">Отчёт (учебн.)</label>
-            </div>
-        </div>
-    </div>
-</div>
-            <div class="btn-group-action d-flex gap-2 mt-4">
-                <button onclick="saveData()" class="btn btn-success flex-grow-1 py-2">💾 Сохранить изменения</button>
-                <button onclick="generateDoc()" class="btn btn-dark flex-grow-1 py-2">📄 Сгенерировать пакет документов</button>
+
+            <div class="btn-group-action d-flex gap-2">
+                <button onclick="saveData()" class="btn btn-success flex-grow-1 py-2">💾 Сохранить</button>
+                <button onclick="generateDoc()" class="btn btn-dark flex-grow-1 py-2">📄 Сгенерировать пакет</button>
             </div>
 
         </div>
@@ -210,7 +195,7 @@
 <script>
 let currentId = null;
 
-// 1. Загрузка списка студентов
+// 1. ЗАГРУЗКА СПИСКА ПРИ ОТКРЫТИИ
 window.onload = function() {
     fetch('/students/')
         .then(r => r.json())
@@ -220,13 +205,14 @@ window.onload = function() {
             students.forEach(s => {
                 let opt = document.createElement("option");
                 opt.value = s.id;
-                opt.textContent = s.fio || ("Студент №" + s.id);
+                opt.textContent = s.fio || s.ФИО_обучающегося || ("Студент #" + s.id);
                 select.appendChild(opt);
             });
         })
-        .catch(err => console.error("Ошибка списка:", err));
+        .catch(err => console.error("Ошибка загрузки списка:", err));
 };
 
+// Авто-загрузка при выборе из списка
 document.getElementById('studentSelect').addEventListener('change', function() {
     if (this.value) {
         document.getElementById("practiceId").value = this.value;
@@ -234,100 +220,73 @@ document.getElementById('studentSelect').addEventListener('change', function() {
     }
 });
 
-// 2. ЗАГРУЗКА ДАННЫХ
+// 2. ЗАГРУЗКА ДАННЫХ СТУДЕНТА
 function loadData() {
     currentId = document.getElementById("practiceId").value;
     if (!currentId) return;
 
-    fetch(`/get_student/${currentId}`)
+    fetch(`/students/${currentId}`)
         .then(r => r.json())
         .then(data => {
             if (data.detail || data.error) return alert("Запись не найдена");
 
-            // Маппинг данных из БД (русские ключи) в ID инпутов
-            const mapping = {
-                "fio": "ФИО_обучающегося",
-                "birth_date": "Дата_рождения",
-                "module_name": "наименование_модуля",
-                "start_day": "день_начала_ПП",
-                "start_month": "месяц_начала_ПП",
-                "start_year": "год_начала_ПП",
-                "end_day": "день_конца_ПП",
-                "end_month": "месяц_конца_ПП",
-                "end_year": "год_конца_ПП",
-                "spec_code": "код_специальности",
-                "spec_name": "наименование_специальности",
-                "hours": "количество_часов_ПП",
-                "teacher_fio": "ФИО_преподавателя",
-                "teacher_phone": "тел_преподаваттеля",
-                "org_name": "название_организации",
-                "org_address": "адрес_организации",
-                "rooms": "Наименование_помещений",
-                "org_boss_post": "должность_отв_организации",
-                "org_boss_fio": "ФИО_отв_организации",
-                "org_boss_phone": "тел_отв_организации",
-                "org_boss_initials": "инициалы_отв_организации",
-                "resp_post": "должность_ответственного",
-                "resp_fio": "ФИО_ответственного",
-                "resp_phone": "тел_ответственного"
-            };
+            // Список всех полей для сопоставления
+            const fields = [
+                "fio", "birth_date", "spec_code", "spec_name", "module_name", "hours",
+                "start_day", "start_month", "start_year", "end_day", "end_month", "end_year",
+                "teacher_fio", "teacher_phone", "org_name", "org_address", "rooms",
+                "org_boss_post", "org_boss_fio", "org_boss_phone", "org_boss_initials",
+                "resp_post", "resp_fio", "resp_phone"
+            ];
 
-            for (let id in mapping) {
-                let dbKey = mapping[id];
-                document.getElementById(id).value = data[dbKey] || "";
-            }
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = data[id] || "";
+            });
 
             document.getElementById("formContainer").style.display = "block";
-            window.scrollTo({ top: 400, behavior: 'smooth' });
+            window.scrollTo({ top: 200, behavior: 'smooth' });
         })
-        .catch(err => alert("Ошибка загрузки: " + err));
+        .catch(err => alert("Ошибка: " + err));
 }
 
-// 3. СОХРАНЕНИЕ ДАННЫХ
+// 3. СОХРАНЕНИЕ
 function saveData() {
-    // Собираем объект с английскими ключами для Pydantic
-    const payload = {
-        fio: document.getElementById("fio").value,
-        birth_date: document.getElementById("birth_date").value,
-        module_name: document.getElementById("module_name").value,
-        start_day: document.getElementById("start_day").value,
-        start_month: document.getElementById("start_month").value,
-        start_year: document.getElementById("start_year").value,
-        end_day: document.getElementById("end_day").value,
-        end_month: document.getElementById("end_month").value,
-        end_year: document.getElementById("end_year").value,
-        spec_code: document.getElementById("spec_code").value,
-        spec_name: document.getElementById("spec_name").value,
-        hours: document.getElementById("hours").value,
-        teacher_fio: document.getElementById("teacher_fio").value,
-        teacher_phone: document.getElementById("teacher_phone").value,
-        org_name: document.getElementById("org_name").value,
-        org_address: document.getElementById("org_address").value,
-        rooms: document.getElementById("rooms").value,
-        org_boss_post: document.getElementById("org_boss_post").value,
-        org_boss_fio: document.getElementById("org_boss_fio").value,
-        org_boss_phone: document.getElementById("org_boss_phone").value,
-        org_boss_initials: document.getElementById("org_boss_initials").value,
-        resp_post: document.getElementById("resp_post").value,
-        resp_fio: document.getElementById("resp_fio").value,
-        resp_phone: document.getElementById("resp_phone").value
-    };
+    const payload = {};
+    const fields = [
+        "fio", "birth_date", "spec_code", "spec_name", "module_name", "hours",
+        "start_day", "start_month", "start_year", "end_day", "end_month", "end_year",
+        "teacher_fio", "teacher_phone", "org_name", "org_address", "rooms",
+        "org_boss_post", "org_boss_fio", "org_boss_phone", "org_boss_initials",
+        "resp_post", "resp_fio", "resp_phone"
+    ];
 
-    fetch(`/practice/${currentId}`, {
+    fields.forEach(id => {
+        payload[id] = document.getElementById(id).value;
+    });
+
+    fetch(`/students/${currentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     })
     .then(r => {
-        if(r.ok) alert("✅ Все 24 поля успешно сохранены в Neon!");
-        else alert("❌ Ошибка сохранения (проверьте логи Render)");
+        if(r.ok) alert("✅ Сохранено в Neon!");
+        else alert("❌ Ошибка сохранения");
     });
 }
 
 // 4. ГЕНЕРАЦИЯ
 function generateDoc() {
-    const docName = "Пакет_документов_практика";
-    window.location.href = `/students/generate/${currentId}/${encodeURIComponent(docName)}`;
+    if (!currentId) return alert("❌ Сначала выберите студента");
+
+    const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
+    const selectedDocs = Array.from(checkboxes).map(cb => cb.value);
+
+    if (selectedDocs.length === 0) return alert("❌ Выберите документы");
+
+    const filesParam = encodeURIComponent(selectedDocs.join(','));
+    window.location.href = `/students/${currentId}/generate-all?files=${filesParam}`;
 }
 </script>
 </body>
