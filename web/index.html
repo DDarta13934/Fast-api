@@ -11,6 +11,7 @@
         .section-title { border-left: 4px solid #0d6efd; padding-left: 10px; margin: 20px 0 15px; font-weight: bold; color: #0d6efd; }
         .form-label { font-weight: 600; font-size: 0.85rem; margin-bottom: 3px; color: #555; }
         .btn-group-action { position: sticky; bottom: 20px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); z-index: 100; }
+        .alert-info { position: fixed; top: 20px; right: 20px; z-index: 9999; }
     </style>
 </head>
 <body>
@@ -19,197 +20,304 @@
     <div class="main-card">
         <h2 class="mb-4">📝 Редактор данных практики</h2>
 
-        <div class="row g-3 align-items-end mb-4">
-            <div class="col-md-6">
-                <label class="form-label">Выберите студента из списка:</label>
-                <select id="studentSelect" class="form-select">
-                    <option value="">-- Загрузка списка... --</option>
-                </select>
+        <!-- Блок загрузки -->
+        <div id="loadingBlock" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Или введите ID:</label>
-                <input type="number" id="practiceId" class="form-control" value="1">
-            </div>
-            <div class="col-md-3">
-                <button onclick="loadData()" class="btn btn-primary w-100">📥 Загрузить данные</button>
-            </div>
+            <p class="mt-2 text-muted">Загрузка списка студентов...</p>
         </div>
 
-        <div id="result" class="alert alert-info py-2 text-center small mb-3" style="display:none"></div>
+        <!-- Блок ошибки -->
+        <div id="errorBlock" class="alert alert-danger" style="display:none;">
+            <h5>❌ Ошибка загрузки</h5>
+            <p id="errorMessage"></p>
+            <button onclick="retryLoadStudents()" class="btn btn-outline-danger btn-sm">🔄 Повторить</button>
+        </div>
 
-        <hr>
-
-        <div id="formContainer" style="display:none">
-            
-            <div class="section-title">Данные студента</div>
-            <div class="row g-3">
-                <div class="col-md-8">
-                    <label class="form-label">ФИО обучающегося</label>
-                    <input id="fio" class="form-control">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Дата рождения</label>
-                    <input id="birth_date" class="form-control" placeholder="ДД.ММ.ГГГГ">
-                </div>
-            </div>
-
-            <div class="section-title">Специальность и модуль</div>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Код специальности</label>
-                    <input id="spec_code" class="form-control">
-                </div>
-                <div class="col-md-9">
-                    <label class="form-label">Наименование специальности</label>
-                    <input id="spec_name" class="form-control">
-                </div>
-                <div class="col-md-8">
-                    <label class="form-label">Наименование модуля (ПМ)</label>
-                    <input id="module_name" class="form-control">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Часов практики</label>
-                    <input id="hours" class="form-control">
-                </div>
-            </div>
-
-            <div class="section-title">Сроки прохождения (ПП)</div>
-            <div class="row g-3">
+        <!-- Основной интерфейс (изначально скрыт) -->
+        <div id="mainInterface" style="display:none;">
+            <div class="row g-3 align-items-end mb-4">
                 <div class="col-md-6">
-                    <label class="form-label">Начало (День / Месяц / Год)</label>
-                    <div class="input-group">
-                        <input id="start_day" class="form-control" placeholder="08">
-                        <input id="start_month" class="form-control" placeholder="декабря">
-                        <input id="start_year" class="form-control" placeholder="2025">
+                    <label class="form-label">Выберите студента из списка:</label>
+                    <select id="studentSelect" class="form-select">
+                        <option value="">-- Выберите студента --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Или введите ID:</label>
+                    <input type="number" id="practiceId" class="form-control" value="1">
+                </div>
+                <div class="col-md-3">
+                    <button onclick="loadData()" class="btn btn-primary w-100">📥 Загрузить данные</button>
+                </div>
+            </div>
+
+            <div id="result" class="alert alert-info py-2 text-center small mb-3" style="display:none"></div>
+
+            <hr>
+
+            <div id="formContainer" style="display:none">
+                
+                <div class="section-title">Данные студента</div>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">ФИО обучающегося</label>
+                        <input id="fio" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Дата рождения</label>
+                        <input id="birth_date" class="form-control" placeholder="ДД.ММ.ГГГГ">
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Конец (День / Месяц / Год)</label>
-                    <div class="input-group">
-                        <input id="end_day" class="form-control" placeholder="21">
-                        <input id="end_month" class="form-control" placeholder="декабря">
-                        <input id="end_year" class="form-control" placeholder="2025">
+
+                <div class="section-title">Специальность и модуль</div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Код специальности</label>
+                        <input id="spec_code" class="form-control">
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label">Наименование специальности</label>
+                        <input id="spec_name" class="form-control">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Наименование модуля (ПМ)</label>
+                        <input id="module_name" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Часов практики</label>
+                        <input id="hours" class="form-control">
                     </div>
                 </div>
-            </div>
 
-            <div class="section-title">Руководитель от колледжа</div>
-            <div class="row g-3">
-                <div class="col-md-8">
-                    <label class="form-label">ФИО преподавателя</label>
-                    <input id="teacher_fio" class="form-control">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Телефон</label>
-                    <input id="teacher_phone" class="form-control">
-                </div>
-            </div>
-
-            <div class="section-title">Место практики</div>
-            <div class="row g-3">
-                <div class="col-12">
-                    <label class="form-label">Название организации</label>
-                    <textarea id="org_name" class="form-control" rows="2"></textarea>
-                </div>
-                <div class="col-md-8">
-                    <label class="form-label">Адрес организации</label>
-                    <input id="org_address" class="form-control">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Помещения</label>
-                    <input id="rooms" class="form-control">
-                </div>
-            </div>
-
-            <div class="section-title">Ответственные от организации</div>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Должность рук. Орг.</label>
-                    <input id="org_boss_post" class="form-control">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">ФИО рук. Орг.</label>
-                    <input id="org_boss_fio" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Телефон</label>
-                    <input id="org_boss_phone" class="form-control">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Инициалы</label>
-                    <input id="org_boss_initials" class="form-control">
-                </div>
-            </div>
-
-            <div class="section-title">Лицо, ответственное за практику</div>
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <label class="form-label">Должность</label>
-                    <input id="resp_post" class="form-control">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">ФИО ответственного</label>
-                    <input id="resp_fio" class="form-control">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Телефон</label>
-                    <input id="resp_phone" class="form-control">
-                </div>
-            </div>
-
-            <div class="card p-3 mb-4 bg-light shadow-sm">
-                <h6 class="mb-3">📄 Какие документы генерируем?</h6>
-                <div class="row">
+                <div class="section-title">Сроки прохождения (ПП)</div>
+                <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист производственная.docx" id="d1" checked>
-                            <label class="form-check-label" for="d1">Аттестационный (произв.)</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт производственная.docx" id="d2" checked>
-                            <label class="form-check-label" for="d2">Отчёт (произв.)</label>
+                        <label class="form-label">Начало (День / Месяц / Год)</label>
+                        <div class="input-group">
+                            <input id="start_day" class="form-control" placeholder="08">
+                            <input id="start_month" class="form-control" placeholder="декабря">
+                            <input id="start_year" class="form-control" placeholder="2025">
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист учебная.docx" id="d3">
-                            <label class="form-check-label" for="d3">Аттестационный (учебн.)</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт учебная.docx" id="d4">
-                            <label class="form-check-label" for="d4">Отчёт (учебн.)</label>
+                        <label class="form-label">Конец (День / Месяц / Год)</label>
+                        <div class="input-group">
+                            <input id="end_day" class="form-control" placeholder="21">
+                            <input id="end_month" class="form-control" placeholder="декабря">
+                            <input id="end_year" class="form-control" placeholder="2025">
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="btn-group-action d-flex gap-2">
-                <button onclick="saveData()" class="btn btn-success flex-grow-1 py-2">💾 Сохранить</button>
-                <button onclick="generateDoc()" class="btn btn-dark flex-grow-1 py-2">📄 Сгенерировать пакет</button>
-            </div>
+                <div class="section-title">Руководитель от колледжа</div>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">ФИО преподавателя</label>
+                        <input id="teacher_fio" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Телефон</label>
+                        <input id="teacher_phone" class="form-control">
+                    </div>
+                </div>
 
+                <div class="section-title">Место практики</div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Название организации</label>
+                        <textarea id="org_name" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Адрес организации</label>
+                        <input id="org_address" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Помещения</label>
+                        <input id="rooms" class="form-control">
+                    </div>
+                </div>
+
+                <div class="section-title">Ответственные от организации</div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Должность рук. Орг.</label>
+                        <input id="org_boss_post" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">ФИО рук. Орг.</label>
+                        <input id="org_boss_fio" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Телефон</label>
+                        <input id="org_boss_phone" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Инициалы</label>
+                        <input id="org_boss_initials" class="form-control">
+                    </div>
+                </div>
+
+                <div class="section-title">Лицо, ответственное за практику</div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Должность</label>
+                        <input id="resp_post" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">ФИО ответственного</label>
+                        <input id="resp_fio" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Телефон</label>
+                        <input id="resp_phone" class="form-control">
+                    </div>
+                </div>
+
+                <div class="card p-3 mb-4 bg-light shadow-sm">
+                    <h6 class="mb-3">📄 Какие документы генерируем?</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист производственная.docx" id="d1" checked>
+                                <label class="form-check-label" for="d1">Аттестационный (произв.)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт производственная.docx" id="d2" checked>
+                                <label class="form-check-label" for="d2">Отчёт (произв.)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист учебная.docx" id="d3">
+                                <label class="form-check-label" for="d3">Аттестационный (учебн.)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт учебная.docx" id="d4">
+                                <label class="form-check-label" for="d4">Отчёт (учебн.)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group-action d-flex gap-2">
+                    <button onclick="saveData()" class="btn btn-success flex-grow-1 py-2">💾 Сохранить</button>
+                    <button onclick="generateDoc()" class="btn btn-dark flex-grow-1 py-2">📄 Сгенерировать пакет</button>
+                </div>
+
+            </div>
         </div>
     </div>
 </div>
 
 <script>
+// Определяем базовый URL API
+const API_BASE = window.location.origin + '/api';
 let currentId = null;
 
+// Функция для отладки
+function debugLog(message, data) {
+    console.log(`[DEBUG] ${message}:`, data);
+}
+
 // 1. ЗАГРУЗКА СПИСКА ПРИ ОТКРЫТИИ
-window.onload = function() {
-    fetch('/students/')
-        .then(r => r.json())
-        .then(students => {
-            const select = document.getElementById("studentSelect");
-            select.innerHTML = '<option value="">-- Выберите студента --</option>';
+async function loadStudents() {
+    const loadingBlock = document.getElementById('loadingBlock');
+    const errorBlock = document.getElementById('errorBlock');
+    const mainInterface = document.getElementById('mainInterface');
+    
+    loadingBlock.style.display = 'block';
+    errorBlock.style.display = 'none';
+    mainInterface.style.display = 'none';
+    
+    // Пробуем разные варианты эндпоинтов
+    const endpoints = [
+        `${API_BASE}/students`,
+        `${API_BASE}/students/`,
+        '/api/students',
+        '/api/students/',
+        '/students',
+        '/students/'
+    ];
+    
+    let students = null;
+    let successEndpoint = null;
+    
+    for (const endpoint of endpoints) {
+        try {
+            debugLog('Пробуем endpoint', endpoint);
+            const response = await fetch(endpoint);
+            
+            if (response.ok) {
+                const data = await response.json();
+                debugLog('Успешный ответ от', endpoint);
+                debugLog('Данные', data);
+                
+                // Проверяем, что data - это массив
+                if (Array.isArray(data)) {
+                    students = data;
+                } else if (data.students && Array.isArray(data.students)) {
+                    students = data.students;
+                } else if (data.data && Array.isArray(data.data)) {
+                    students = data.data;
+                } else {
+                    debugLog('Неизвестный формат данных', data);
+                    continue;
+                }
+                
+                successEndpoint = endpoint;
+                break;
+            } else {
+                debugLog('Ошибка ответа от', `${endpoint}: ${response.status} ${response.statusText}`);
+            }
+        } catch (error) {
+            debugLog('Ошибка запроса к', `${endpoint}: ${error.message}`);
+        }
+    }
+    
+    if (students && successEndpoint) {
+        // Сохраняем рабочий endpoint для дальнейшего использования
+        window.workingEndpoint = successEndpoint.replace(/\/$/, '');
+        
+        const select = document.getElementById("studentSelect");
+        select.innerHTML = '<option value="">-- Выберите студента --</option>';
+        
+        if (students.length === 0) {
+            select.innerHTML += '<option value="" disabled>Нет студентов в базе</option>';
+        } else {
             students.forEach(s => {
                 let opt = document.createElement("option");
-                opt.value = s.id;
-                opt.textContent = s.fio || s.ФИО_обучающегося || ("Студент #" + s.id);
+                opt.value = s.id || s.ID || s.student_id;
+                opt.textContent = s.fio || s.ФИО || s.name || s.full_name || `Студент #${s.id || s.ID}`;
                 select.appendChild(opt);
             });
-        })
-        .catch(err => console.error("Ошибка загрузки списка:", err));
+        }
+        
+        loadingBlock.style.display = 'none';
+        mainInterface.style.display = 'block';
+        
+        showMessage(`✅ Загружено ${students.length} студентов`, 'success');
+    } else {
+        loadingBlock.style.display = 'none';
+        errorBlock.style.display = 'block';
+        
+        let errorMsg = 'Не удалось загрузить список студентов. ';
+        errorMsg += 'Проверьте, что сервер запущен и база данных доступна. ';
+        errorMsg += 'Проверьте консоль браузера (F12) для деталей.';
+        
+        document.getElementById('errorMessage').textContent = errorMsg;
+        debugLog('Все endpoints недоступны', 'Проверьте сервер');
+    }
+}
+
+function retryLoadStudents() {
+    loadStudents();
+}
+
+// Загружаем студентов при загрузке страницы
+window.onload = function() {
+    loadStudents();
 };
 
 // Авто-загрузка при выборе из списка
@@ -221,37 +329,95 @@ document.getElementById('studentSelect').addEventListener('change', function() {
 });
 
 // 2. ЗАГРУЗКА ДАННЫХ СТУДЕНТА
-function loadData() {
+async function loadData() {
     currentId = document.getElementById("practiceId").value;
-    if (!currentId) return;
+    if (!currentId) {
+        showMessage('❌ Введите ID студента', 'danger');
+        return;
+    }
 
-    fetch(`/students/${currentId}`)
-        .then(r => r.json())
-        .then(data => {
-            if (data.detail || data.error) return alert("Запись не найдена");
-
-            // Список всех полей для сопоставления
-            const fields = [
-                "fio", "birth_date", "spec_code", "spec_name", "module_name", "hours",
-                "start_day", "start_month", "start_year", "end_day", "end_month", "end_year",
-                "teacher_fio", "teacher_phone", "org_name", "org_address", "rooms",
-                "org_boss_post", "org_boss_fio", "org_boss_phone", "org_boss_initials",
-                "resp_post", "resp_fio", "resp_phone"
-            ];
-
-            fields.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = data[id] || "";
-            });
-
-            document.getElementById("formContainer").style.display = "block";
-            window.scrollTo({ top: 200, behavior: 'smooth' });
-        })
-        .catch(err => alert("Ошибка: " + err));
+    showMessage('⏳ Загрузка данных...', 'info');
+    
+    const baseEndpoint = window.workingEndpoint || `${API_BASE}/students`;
+    const url = `${baseEndpoint}/${currentId}`;
+    
+    debugLog('Загрузка данных студента', url);
+    
+    try {
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        debugLog('Данные студента', data);
+        
+        // Извлекаем данные студента из ответа
+        let studentData = data;
+        if (data.student) studentData = data.student;
+        if (data.data) studentData = data.data;
+        
+        // Список всех полей для сопоставления
+        const fieldMappings = {
+            "fio": ["fio", "ФИО", "full_name", "name", "ФИО_обучающегося"],
+            "birth_date": ["birth_date", "birthDate", "дата_рождения", "Дата_рождения"],
+            "spec_code": ["spec_code", "specCode", "код_специальности", "Код_специальности"],
+            "spec_name": ["spec_name", "specName", "специальность", "Наименование_специальности"],
+            "module_name": ["module_name", "moduleName", "модуль", "ПМ"],
+            "hours": ["hours", "часы", "hours_count"],
+            "start_day": ["start_day", "startDay"],
+            "start_month": ["start_month", "startMonth"],
+            "start_year": ["start_year", "startYear"],
+            "end_day": ["end_day", "endDay"],
+            "end_month": ["end_month", "endMonth"],
+            "end_year": ["end_year", "endYear"],
+            "teacher_fio": ["teacher_fio", "teacherFio", "преподаватель"],
+            "teacher_phone": ["teacher_phone", "teacherPhone", "телефон_преподавателя"],
+            "org_name": ["org_name", "orgName", "организация", "Название_организации"],
+            "org_address": ["org_address", "orgAddress", "адрес_организации"],
+            "rooms": ["rooms", "помещения"],
+            "org_boss_post": ["org_boss_post", "orgBossPost", "должность_рук"],
+            "org_boss_fio": ["org_boss_fio", "orgBossFio", "фио_рук"],
+            "org_boss_phone": ["org_boss_phone", "orgBossPhone", "телефон_рук"],
+            "org_boss_initials": ["org_boss_initials", "orgBossInitials", "инициалы_рук"],
+            "resp_post": ["resp_post", "respPost", "должность_отв"],
+            "resp_fio": ["resp_fio", "respFio", "фио_отв"],
+            "resp_phone": ["resp_phone", "respPhone", "телефон_отв"]
+        };
+        
+        // Заполняем поля
+        for (const [fieldId, possibleNames] of Object.entries(fieldMappings)) {
+            const el = document.getElementById(fieldId);
+            if (!el) continue;
+            
+            let value = '';
+            for (const name of possibleNames) {
+                if (studentData[name] !== undefined && studentData[name] !== null) {
+                    value = studentData[name];
+                    break;
+                }
+            }
+            el.value = value;
+        }
+        
+        document.getElementById("formContainer").style.display = "block";
+        showMessage('✅ Данные загружены', 'success');
+        window.scrollTo({ top: 200, behavior: 'smooth' });
+        
+    } catch (error) {
+        debugLog('Ошибка загрузки', error);
+        showMessage(`❌ Ошибка: ${error.message}`, 'danger');
+    }
 }
 
 // 3. СОХРАНЕНИЕ
-function saveData() {
+async function saveData() {
+    if (!currentId) {
+        showMessage('❌ Сначала загрузите данные студента', 'danger');
+        return;
+    }
+    
     const payload = {};
     const fields = [
         "fio", "birth_date", "spec_code", "spec_name", "module_name", "hours",
@@ -262,31 +428,72 @@ function saveData() {
     ];
 
     fields.forEach(id => {
-        payload[id] = document.getElementById(id).value;
+        const el = document.getElementById(id);
+        if (el) payload[id] = el.value;
     });
 
-    fetch(`/students/${currentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    })
-    .then(r => {
-        if(r.ok) alert("✅ Сохранено в Neon!");
-        else alert("❌ Ошибка сохранения");
-    });
+    const baseEndpoint = window.workingEndpoint || `${API_BASE}/students`;
+    const url = `${baseEndpoint}/${currentId}`;
+    
+    debugLog('Сохранение данных', { url, payload });
+    showMessage('⏳ Сохранение...', 'info');
+    
+    try {
+        const response = await fetch(url, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            debugLog('Результат сохранения', result);
+            showMessage('✅ Данные успешно сохранены!', 'success');
+        } else {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+    } catch (error) {
+        debugLog('Ошибка сохранения', error);
+        showMessage(`❌ Ошибка сохранения: ${error.message}`, 'danger');
+    }
 }
 
-// 4. ГЕНЕРАЦИЯ
+// 4. ГЕНЕРАЦИЯ ДОКУМЕНТОВ
 function generateDoc() {
-    if (!currentId) return alert("❌ Сначала выберите студента");
+    if (!currentId) {
+        showMessage('❌ Сначала выберите студента', 'danger');
+        return;
+    }
 
     const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
     const selectedDocs = Array.from(checkboxes).map(cb => cb.value);
 
-    if (selectedDocs.length === 0) return alert("❌ Выберите документы");
+    if (selectedDocs.length === 0) {
+        showMessage('❌ Выберите хотя бы один документ', 'danger');
+        return;
+    }
 
+    const baseEndpoint = window.workingEndpoint || `${API_BASE}/students`;
     const filesParam = encodeURIComponent(selectedDocs.join(','));
-    window.location.href = `/students/${currentId}/generate-all?files=${filesParam}`;
+    const url = `${baseEndpoint}/${currentId}/generate-all?files=${filesParam}`;
+    
+    debugLog('Генерация документов', url);
+    showMessage('📄 Запускаем генерацию документов...', 'info');
+    window.location.href = url;
+}
+
+// Вспомогательная функция для показа сообщений
+function showMessage(text, type = 'info') {
+    const resultDiv = document.getElementById('result');
+    resultDiv.textContent = text;
+    resultDiv.className = `alert alert-${type} py-2 text-center small mb-3`;
+    resultDiv.style.display = 'block';
+    
+    // Автоматически скрываем через 5 секунд
+    setTimeout(() => {
+        resultDiv.style.display = 'none';
+    }, 5000);
 }
 </script>
 </body>
