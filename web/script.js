@@ -15,19 +15,15 @@ async function discoverEndpoints() {
             const get = methods.get;
             const put = methods.put;
 
-            // Ищем GET, который возвращает список (массив)
+            // Ищем GET, который возвращает список (без параметров в пути)
             if (get) {
-                const ok = get.responses?.['200'] || get.responses?.[200];
-                if (ok) {
-                    // Проверяем, нет ли параметра id / student_id в пути
-                    const hasIdParam = path.includes('{student_id}') || path.includes('{id}');
-                    if (!hasIdParam && !API_STUDENTS_LIST) {
-                        API_STUDENTS_LIST = path;
-                        console.log('[AUTO] Список студентов:', path);
-                    } else if (hasIdParam && !API_STUDENT_DETAIL) {
-                        API_STUDENT_DETAIL = path;
-                        console.log('[AUTO] Детали студента:', path);
-                    }
+                const hasIdParam = path.includes('{student_id}') || path.includes('{id}');
+                if (!hasIdParam && !API_STUDENTS_LIST) {
+                    API_STUDENTS_LIST = path;
+                    console.log('[AUTO] Список студентов:', path);
+                } else if (hasIdParam && !API_STUDENT_DETAIL) {
+                    API_STUDENT_DETAIL = path;
+                    console.log('[AUTO] Детали студента:', path);
                 }
             }
 
@@ -39,25 +35,25 @@ async function discoverEndpoints() {
         }
 
         if (!API_STUDENTS_LIST) {
-            console.warn('Не удалось найти эндпоинт списка студентов, использую /students');
-            API_STUDENTS_LIST = '/students';
+            console.warn('Не удалось найти эндпоинт списка студентов, использую /api/students');
+            API_STUDENTS_LIST = '/api/students';
         }
         if (!API_STUDENT_DETAIL) {
-            console.warn('Не удалось найти эндпоинт одного студента, использую /students/{id}');
-            API_STUDENT_DETAIL = '/students/{id}';
+            console.warn('Не удалось найти эндпоинт одного студента, использую /api/students/{id}');
+            API_STUDENT_DETAIL = '/api/students/{id}';
         }
         if (!API_STUDENT_UPDATE) {
-            console.warn('Не удалось найти эндпоинт обновления, использую /students/{id}');
-            API_STUDENT_UPDATE = '/students/{id}';
+            console.warn('Не удалось найти эндпоинт обновления, использую /api/students/{id}');
+            API_STUDENT_UPDATE = '/api/students/{id}';
         }
 
         return true;
     } catch (e) {
         console.error('Ошибка автоопределения эндпоинтов:', e);
-        // Fallback — пробуем вручную
-        API_STUDENTS_LIST = '/students';
-        API_STUDENT_DETAIL = '/students/{id}';
-        API_STUDENT_UPDATE = '/students/{id}';
+        // Fallback
+        API_STUDENTS_LIST = '/api/students';
+        API_STUDENT_DETAIL = '/api/students/{id}';
+        API_STUDENT_UPDATE = '/api/students/{id}';
         return false;
     }
 }
@@ -112,12 +108,10 @@ function retryLoadStudents() {
     discoverEndpoints().then(() => loadStudents());
 }
 
-// Запускаем после загрузки DOM
 window.addEventListener('DOMContentLoaded', async () => {
     await discoverEndpoints();
     await loadStudents();
 
-    // Обработчик выбора студента
     document.getElementById('studentSelect').addEventListener('change', function () {
         if (this.value) {
             document.getElementById("practiceId").value = this.value;
@@ -246,8 +240,7 @@ function generateDoc() {
         return;
     }
     const files = Array.from(checked).map(cb => cb.value).join(',');
-    // Пусть генерация идёт по тому же PUT-эндпоинту, но с /generate-all
-    const base = API_STUDENT_UPDATE || '/students/{id}';
+    const base = API_STUDENT_UPDATE || '/api/students/{id}';
     const genUrl = base
         .replace('{student_id}', currentId)
         .replace('{id}', currentId) + '/generate-all?files=' + encodeURIComponent(files);
