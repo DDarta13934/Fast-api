@@ -15,26 +15,6 @@
     </style>
 </head>
 <body>
-
-    <div class="mb-3">
-    <label class="form-label">Выберите документы для генерации:</label>
-    <div class="form-check">
-        <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист производственная.docx" id="doc1" checked>
-        <label class="form-check-label" for="doc1">Аттестационный лист (произв.)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист учебная.docx" id="doc2">
-        <label class="form-check-label" for="doc2">Аттестационный лист (учебн.)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт производственная.docx" id="doc3" checked>
-        <label class="form-check-label" for="doc3">Отчёт (произв.)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт учебная.docx" id="doc4">
-        <label class="form-check-label" for="doc4">Отчёт (учебн.)</label>
-    </div>
-</div>
 <div class="container">
     <div class="main-card">
         <h2 class="mb-4">📝 Редактор данных практики</h2>
@@ -71,6 +51,25 @@
                 </div>
             </div>
 
+    <div class="mb-3">
+    <label class="form-label">Выберите документы для генерации:</label>
+    <div class="form-check">
+        <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист производственная.docx" id="doc1" checked>
+        <label class="form-check-label" for="doc1">Аттестационный лист (произв.)</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист учебная.docx" id="doc2">
+        <label class="form-check-label" for="doc2">Аттестационный лист (учебн.)</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт производственная.docx" id="doc3" checked>
+        <label class="form-check-label" for="doc3">Отчёт (произв.)</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт учебная.docx" id="doc4">
+        <label class="form-check-label" for="doc4">Отчёт (учебн.)</label>
+    </div>
+</div>
             <div class="section-title">Специальность и модуль</div>
             <div class="row g-3">
                 <div class="col-md-3">
@@ -174,7 +173,31 @@
                     <input id="resp_phone" class="form-control">
                 </div>
             </div>
-
+<div class="mb-4 p-3 border rounded bg-light">
+    <label class="form-label d-block mb-2">Какие документы сгенерировать?</label>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-check">
+                <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист производственная.docx" id="doc1" checked>
+                <label class="form-check-label" for="doc1">Аттестационный лист (произв.)</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input doc-checkbox" type="checkbox" value="Аттестационный лист учебная.docx" id="doc2">
+                <label class="form-check-label" for="doc2">Аттестационный лист (учебн.)</label>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-check">
+                <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт производственная.docx" id="doc3" checked>
+                <label class="form-check-label" for="doc3">Отчёт (произв.)</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input doc-checkbox" type="checkbox" value="Отчёт учебная.docx" id="doc4">
+                <label class="form-check-label" for="doc4">Отчёт (учебн.)</label>
+            </div>
+        </div>
+    </div>
+</div>
             <div class="btn-group-action d-flex gap-2 mt-4">
                 <button onclick="saveData()" class="btn btn-success flex-grow-1 py-2">💾 Сохранить изменения</button>
                 <button onclick="generateDoc()" class="btn btn-dark flex-grow-1 py-2">📄 Сгенерировать пакет документов</button>
